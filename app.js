@@ -2226,6 +2226,20 @@ function handleCrudDelete(type, id) {
 }
 
 
+// 获取 API 基础域名 (用于本地开发指向线上环境)
+function getApiBaseUrl() {
+    // 如果是本地环境 (file, localhost, 127.0.0.1)，使用线上 API
+    if (location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        // 尝试从配置读取 (虽然配置 key 可能变化，作为 fallback)
+        try {
+            const config = JSON.parse(localStorage.getItem('learnflow_feishu_config') || '{}');
+            if (config.vercelUrl) return config.vercelUrl;
+        } catch (e) { }
+        return 'https://ai-learning-coach-sigma.vercel.app';
+    }
+    return '';
+}
+
 // ===== 飞书授权管理 =====
 const FeishuAuth = {
     // 飞书 App ID (需替换为您的实际 App ID)
@@ -2240,7 +2254,7 @@ const FeishuAuth = {
     // 登录
     login() {
         // 构建授权 URL
-        const redirectUri = encodeURIComponent(window.location.origin); // Simplest callback to root
+        const redirectUri = encodeURIComponent(this.REDIRECT_URI);
         const appId = this.APP_ID;
         const scope = 'contact:user.id:readonly bitable:app:readonly bitable:app:read_write'; // Need permissions
         // Feishu OAuth URL (Web app)
@@ -2261,8 +2275,8 @@ const FeishuAuth = {
 
                 showToast('正在登录飞书...', 'info');
 
-                // 请求后端换票
-                const res = await fetch('/api/auth/feishu', {
+                // 请求后端换票 (自动适配本地/线上环境)
+                const res = await fetch(getApiBaseUrl() + '/api/auth/feishu', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ code })
@@ -2409,14 +2423,9 @@ const FeishuSync = {
         return !!(c.appId && c.appSecret && c.appToken);
     },
 
-    // 获取 API 基础 URL（生产环境用相对路径，本地开发用完整 URL）
+    // 获取 API 完整 URL
     getApiUrl() {
-        if (location.protocol === 'file:') {
-            // 本地文件打开时，需要指向 Vercel 部署的 API
-            const config = this.getConfig();
-            return config.vercelUrl || 'https://ai-learning-coach-sigma.vercel.app';
-        }
-        return '';  // 生产环境用相对路径
+        return getApiBaseUrl() + '/api/feishu';
     },
 
     // 调用飞书 API 代理
