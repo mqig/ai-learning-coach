@@ -7,10 +7,33 @@
     <title>AI 学习教练 | LearnFlow</title>
     <meta name="description" content="基于 AI 的智能学习教练系统，帮助你高效学习和复习">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="style.css?v=2.1.0">
+    <!-- 字体异步加载，不阻塞首屏渲染 -->
+    <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.0.3">
+        media="print" onload="this.media='all'">
+    <!-- 关键内联样式：确保登录遮罩即时渲染 -->
+    <style>
+        body {
+            margin: 0;
+            background: #191919;
+            overflow: hidden;
+        }
+
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(25, 25, 25, 0.97);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+    </style>
 </head>
 
 <body>
@@ -550,7 +573,7 @@
         </div>
     </div>
     <!-- 登录遮罩 -->
-    <div id="loginOverlay" class="login-overlay" style="display: none;">
+    <div id="loginOverlay" class="login-overlay">
         <div class="login-container">
             <div class="login-logo">🧠</div>
             <h2>登录 AI 学习教练</h2>
@@ -578,7 +601,7 @@
     <!-- Toast 通知 -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="app.js?v=2.1.0"></script>
+    <script src="app.js?v=2.1.1" defer></script>
 </body>
 
 </html>

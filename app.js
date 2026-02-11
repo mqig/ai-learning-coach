@@ -865,18 +865,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // 2. 检查登录状态
+        // 2. 检查登录状态（遮罩默认可见，已登录则立即隐藏）
         if (FeishuAuth.isLoggedIn()) {
-            // 已登录：隐藏遮罩，显示退出按钮
+            // 已登录：隐藏遮罩，恢复滚动，显示退出按钮
             if (overlay) overlay.style.display = 'none';
+            document.body.style.overflow = '';
             if (logoutBtn) logoutBtn.style.display = 'flex';
-        } else {
-            // 未登录：显示遮罩
-            if (overlay) {
-                overlay.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            }
         }
+        // 未登录：遮罩保持默认可见状态，无需额外操作
 
         // 3. 绑定登录页事件
         document.getElementById('feishuLoginBtn')?.addEventListener('click', () => {
