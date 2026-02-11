@@ -2248,8 +2248,9 @@ function getApiBaseUrl() {
 const FeishuAuth = {
     // 飞书 App ID (需替换为您的实际 App ID)
     APP_ID: 'cli_a906a5b58876dbc7', // Updated App ID
-    // For local dev/vercel, use current URL (without query params) as redirect URI
-    REDIRECT_URI: window.location.href.split('?')[0],
+    // For local dev/vercel, use explicit Vercel URL as redirect URI
+    // 飞书后台必须添加: https://ai-learning-coach-sigma.vercel.app/
+    REDIRECT_URI: 'https://ai-learning-coach-sigma.vercel.app/',
 
     // 状态 Key
     TOKEN_KEY: 'feishu_user_token',
