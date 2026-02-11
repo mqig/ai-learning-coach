@@ -852,13 +852,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== 飞书登录初始化 =====
     if (typeof FeishuAuth !== 'undefined') {
         const overlay = document.getElementById('loginOverlay');
-        const userInfo = document.getElementById('userInfo');
+        const logoutBtn = document.getElementById('logoutBtn');
 
         // 1. 处理 OAuth 回调
         FeishuAuth.handleCallback();
 
-        // 尝试绑定退出按钮（如果存在）
-        const logoutBtn = document.getElementById('logoutBtn');
+        // 绑定退出按钮
         if (logoutBtn) {
             logoutBtn.onclick = function (e) {
                 e.preventDefault();
@@ -868,28 +867,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. 检查登录状态
         if (FeishuAuth.isLoggedIn()) {
-            // 已登录：隐藏遮罩，显示用户信息
+            // 已登录：隐藏遮罩，显示退出按钮
             if (overlay) overlay.style.display = 'none';
-            if (userInfo) {
-                userInfo.style.display = 'flex';
-                const user = FeishuAuth.getUser();
-                if (user) {
-                    document.getElementById('userName').textContent = user.name;
-                    // 设置头像：有真实头像用真实的，否则用 SVG 默认头像
-                    const avatarEl = document.getElementById('userAvatar');
-                    if (user.avatar && user.avatar.length > 0) {
-                        avatarEl.src = user.avatar;
-                    } else {
-                        // 默认头像：😊 表情
-                        avatarEl.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%233370FF" width="40" height="40" rx="20"/><text x="20" y="28" text-anchor="middle" font-size="22">😊</text></svg>');
-                    }
-                }
-            }
+            if (logoutBtn) logoutBtn.style.display = 'flex';
         } else {
             // 未登录：显示遮罩
             if (overlay) {
                 overlay.style.display = 'flex';
-                // 防止页面后面内容可点击
                 document.body.style.overflow = 'hidden';
             }
         }
@@ -899,27 +883,20 @@ document.addEventListener('DOMContentLoaded', () => {
             FeishuAuth.login();
         });
 
-        // 【终极修复】使用全局捕获阶段监听器处理退出
-        // 确保在任何 stopPropagation 之前捕获点击
+        // 全局捕获阶段监听退出点击
         window.addEventListener('click', (e) => {
             if (e.target && (e.target.id === 'logoutBtn' || e.target.closest('#logoutBtn'))) {
                 e.preventDefault();
-                e.stopPropagation(); // 防止其他逻辑干扰
-                console.log('Logout triggered via global capture');
+                e.stopPropagation();
                 FeishuAuth.logout();
             }
-        }, true); // useCapture = true
+        }, true);
 
         document.getElementById('guestLogin')?.addEventListener('click', () => {
             if (overlay) overlay.style.display = 'none';
-            document.body.style.overflow = ''; // 恢复滚动
-            // 游客模式：显示默认头像和用户名
-            if (userInfo) {
-                userInfo.style.display = 'flex';
-                document.getElementById('userName').textContent = '游客';
-                const avatarEl = document.getElementById('userAvatar');
-                avatarEl.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%233370FF" width="40" height="40" rx="20"/><text x="20" y="28" text-anchor="middle" font-size="22">😊</text></svg>');
-            }
+            document.body.style.overflow = '';
+            // 游客模式：显示退出按钮
+            if (logoutBtn) logoutBtn.style.display = 'flex';
         });
     }
 
