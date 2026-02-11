@@ -871,7 +871,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             // 未登录：显示遮罩
-            if (overlay) overlay.style.display = 'flex';
+            if (overlay) {
+                overlay.style.display = 'flex';
+                // 防止页面后面内容可点击
+                document.body.style.overflow = 'hidden';
+            }
         }
 
         // 3. 绑定登录页事件
