@@ -13,7 +13,7 @@ export default async function handler(req, res) {
         return;
     }
 
-    const { code, grant_type, refresh_token } = req.body;
+    const { code, grant_type, refresh_token, redirect_uri } = req.body;
     if (!code && !refresh_token) {
         res.status(400).json({ error: 'Missing code or refresh_token' });
         return;
@@ -36,7 +36,11 @@ export default async function handler(req, res) {
 
         const body = grant_type === 'refresh_token'
             ? { grant_type: 'refresh_token', refresh_token }
-            : { grant_type: 'authorization_code', code };
+            : {
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: redirect_uri
+            };
 
         const response = await fetch(endpoint, {
             method: 'POST',

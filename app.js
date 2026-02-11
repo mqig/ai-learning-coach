@@ -2259,23 +2259,24 @@ function getApiBaseUrl() {
 // Feishu OAuth Configuration & Logic
 // Make it globally accessible for event handlers
 window.FeishuAuth = {
-    // 飞书 App ID (需替换为您的实际 App ID)
-    APP_ID: 'cli_a906a5b58876dbc7', // Updated App ID
-    // For local dev/vercel, use explicit Vercel URL as redirect URI
-    // 飞书后台必须添加: https://ai-learning-coach-sigma.vercel.app/
-    REDIRECT_URI: 'https://ai-learning-coach-sigma.vercel.app/',
+    // 飞书 App ID
+    APP_ID: 'cli_a906a5b58876dbc7',
 
     // 状态 Key
     TOKEN_KEY: 'feishu_user_token',
+    EXPIRE_KEY: 'feishu_user_token_expire',
+    REFRESH_TOKEN_KEY: 'feishu_user_refresh_token',
     USER_INFO_KEY: 'feishu_user_info',
+
+    // 动态获取当前环境的 Redirect URI
+    get REDIRECT_URI() {
+        return window.location.origin + '/';
+    },
 
     // 登录
     login() {
-        // 构建授权 URL
-        const redirectUri = encodeURIComponent(this.REDIRECT_URI);
         const appId = this.APP_ID;
-        const scope = 'contact:user.id:readonly bitable:app:readonly bitable:app:read_write'; // Need permissions
-        // Feishu OAuth URL (Web app)
+        const redirectUri = encodeURIComponent(this.REDIRECT_URI);
         const url = `https://open.feishu.cn/open-apis/authen/v1/index?app_id=${appId}&redirect_uri=${redirectUri}&state=LOGIN`;
         window.location.href = url;
     },
@@ -2310,7 +2311,10 @@ window.FeishuAuth = {
                 const res = await fetch(getApiBaseUrl() + '/api/auth/feishu', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code })
+                    body: JSON.stringify({
+                        code,
+                        redirect_uri: this.REDIRECT_URI
+                    })
                 });
 
                 const data = await res.json();
@@ -2533,7 +2537,8 @@ const FeishuSync = {
         const config = this.getConfig();
         const apiUrl = this.getApiUrl();
 
-        const resp = await fetch(`${apiUrl}/api/feishu`, {
+        // 修复：apiUrl 已经包含了 /api/feishu，不应重复拼接
+        const res = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
