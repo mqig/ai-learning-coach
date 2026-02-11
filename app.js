@@ -913,6 +913,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('guestLogin')?.addEventListener('click', () => {
             if (overlay) overlay.style.display = 'none';
             document.body.style.overflow = ''; // 恢复滚动
+            // 游客模式：显示默认头像和用户名
+            if (userInfo) {
+                userInfo.style.display = 'flex';
+                document.getElementById('userName').textContent = '游客';
+                const avatarEl = document.getElementById('userAvatar');
+                avatarEl.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%233370FF" width="40" height="40" rx="20"/><text x="20" y="28" text-anchor="middle" font-size="22">😊</text></svg>');
+            }
         });
     }
 
