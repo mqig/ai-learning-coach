@@ -2272,13 +2272,18 @@ function getApiBaseUrl() {
 // Feishu OAuth Configuration & Logic
 // Make it globally accessible for event handlers
 window.FeishuAuth = {
-    // 飞书 App ID 改为动态，不应硬编码
+    // 缓存从后端获取的公共 App ID
+    _publicAppId: null,
+
+    // 获取 App ID：优先使用用户手动配置的，其次使用后端环境变量预设的
     get APP_ID() {
+        // 1. 优先检查用户手动配置的 (多维表格同步模块中的配置)
         if (typeof FeishuSync !== 'undefined') {
             const config = FeishuSync.getConfig();
-            return config.appId || null;
+            if (config.appId) return config.appId;
         }
-        return null;
+        // 2. 返回后端预设的公共 ID
+        return this._publicAppId;
     },
 
     // 状态 Key
@@ -2293,23 +2298,39 @@ window.FeishuAuth = {
     },
 
     // 登录
-    login() {
-        const appId = this.APP_ID;
+    async login() {
+        let appId = this.APP_ID;
+
+        // 如果没有配置 App ID，尝试从后端获取公共 ID
         if (!appId) {
-            showToast('请先在 AI 后台配置中填入您的飞书 App ID', 'error');
+            try {
+                const res = await fetch(getApiBaseUrl() + '/api/auth/feishu');
+                const data = await res.json();
+                if (data.appId) {
+                    this._publicAppId = data.appId;
+                    appId = data.appId;
+                }
+            } catch (e) {
+                console.error('Failed to fetch public App ID:', e);
+            }
+        }
+
+        if (!appId) {
+            showToast('请在此配置您的飞书 App ID 以开启登录', 'info');
+            // ... (保持原有的打开弹窗逻辑)
             setTimeout(() => {
                 const modal = document.getElementById('aiConfigModal');
                 if (modal) {
-                    initAIConfig(); // 确保加载
+                    initAIConfig();
                     loadConfigToForm();
                     modal.classList.add('active');
                 }
             }, 1000);
             return;
         }
+
         const redirectUri = encodeURIComponent(this.REDIRECT_URI);
         const url = `https://open.feishu.cn/open-apis/authen/v1/index?app_id=${appId}&redirect_uri=${redirectUri}&state=LOGIN`;
-        console.log('Feishu Login Redirect URI:', this.REDIRECT_URI);
         window.location.href = url;
     },
 

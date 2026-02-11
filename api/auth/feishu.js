@@ -13,6 +13,12 @@ export default async function handler(req, res) {
         return;
     }
 
+    // 支持 GET 请求获取公共 APP_ID (用于一键登录无需手动配置)
+    if (req.method === 'GET') {
+        res.status(200).json({ appId: process.env.FEISHU_APP_ID || null });
+        return;
+    }
+
     const { code, grant_type, refresh_token, redirect_uri } = req.body;
     if (!code && !refresh_token) {
         res.status(400).json({ error: 'Missing code or refresh_token' });
