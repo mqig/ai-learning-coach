@@ -2607,7 +2607,15 @@ const FeishuSync = {
             })
         });
 
-        const result = await res.json();
+        const rawText = await res.text();
+        let result;
+        try {
+            result = JSON.parse(rawText);
+        } catch (e) {
+            console.error('Failed to parse Feishu API response:', rawText);
+            throw new Error(`服务器响应格式错误 (${res.status}): ${rawText.substring(0, 100)}`);
+        }
+
         if (!res.ok || result.error) {
             throw new Error(result.error || `HTTP ${res.status}`);
         }

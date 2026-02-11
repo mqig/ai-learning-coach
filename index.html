@@ -273,12 +273,27 @@
                         <hr class="config-divider">
 
                         <div class="feishu-section">
-                            <h3 class="feishu-section-title">📊 多维表格配置</h3>
-                            <p class="config-hint">打开你的飞书多维表格，从 URL 中复制
-                                app_token（格式如：https://xxx.feishu.cn/base/<strong>appToken</strong>）</p>
+                            <h3 class="feishu-section-title">📊 多维表格（Bitable）配置</h3>
+                            <p class="config-hint">只需新建一个<strong>空白多维表格</strong>，从地址栏复制 App Token 填入下方</p>
+
+                            <div class="config-group"
+                                style="background: rgba(24, 144, 255, 0.05); padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; border-left: 4px solid var(--accent-blue);">
+                                <div style="margin-bottom: 4px; font-weight: 600; color: var(--text-primary);">💡 如何获取
+                                    App Token？</div>
+                                <div style="color: var(--text-secondary); line-height: 1.5;">
+                                    打开多维表格，查看地址栏：<br>
+                                    <code>.../bitable/<span style="color:var(--accent-blue); background: rgba(24, 144, 255, 0.1); padding: 0 4px; border-radius: 2px; font-weight: bold;">bascnXXXXXX</span>?from=...</code><br>
+                                    复制 <strong>bascn</strong> 开头的那段字符即可。
+                                </div>
+                                <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-tertiary);">
+                                    注：程序会自动在该表格内创建所需的 4 张数据表，无需手动准备。
+                                </div>
+                            </div>
+
                             <div class="config-group">
-                                <label class="config-label">多维表格 App Token</label>
-                                <input type="text" class="config-input" id="feishuAppToken" placeholder="bascnXXXXXXXX">
+                                <label class="config-label">表格 App Token</label>
+                                <input type="text" class="config-input" id="feishuAppToken"
+                                    placeholder="输入 bascn 开头的 App Token">
                             </div>
                         </div>
 
