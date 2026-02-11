@@ -13,12 +13,12 @@
 ## 🚀 快速开始
 
 ### 在线使用
-直接访问部署地址即可使用，无需安装。
+👉 [https://ai-learning-coach-sigma.vercel.app](https://ai-learning-coach-sigma.vercel.app)
 
 ### 本地使用
 ```bash
 # 克隆仓库
-git clone https://github.com/YOUR_USERNAME/ai-learning-coach.git
+git clone https://github.com/mqig/ai-learning-coach.git
 
 # 直接打开
 open index.html
