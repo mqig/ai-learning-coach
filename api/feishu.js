@@ -1,7 +1,7 @@
 // Vercel Serverless Function - 飞书多维表格 API 代理
 // 解决浏览器端 CORS 限制，代理所有飞书 API 请求
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // 设置 CORS 头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
