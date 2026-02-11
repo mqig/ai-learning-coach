@@ -1007,12 +1007,7 @@ async function handleAnalyze() {
     const content = document.getElementById('articleInput').value.trim();
     const title = document.getElementById('articleTitle').value.trim() || '未命名学习';
 
-    // 检查标题是否重复
-    const existingTopics = DB.getAll().topics;
-    if (existingTopics.some(t => t.title === title)) {
-        showToast('该主题名称已存在，请使用其他名称', 'error');
-        return;
-    }
+
 
     if (!content) {
         showToast('请先输入学习内容', 'error');
