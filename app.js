@@ -2294,13 +2294,19 @@ window.FeishuAuth = {
         window.location.href = url;
     },
 
+    // 防止 handleCallback 被多次调用的标志
+    _handlingCallback: false,
+
     // 处理回调 (在页面加载时检查 URL param 'code')
     async handleCallback() {
+        // 防止重复调用
+        if (this._handlingCallback) return false;
+
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const state = urlParams.get('state');
 
-        // 如果检测到 code 参数，立即显示加载遮罩(loadingOverlay)，同时隐藏登录遮罩(loginOverlay)
+        // 如果检测到 code 参数，立即显示加载遮罩，隐藏登录遮罩
         if (code) {
             const loadingOverlay = document.getElementById('loadingOverlay');
             const loginOverlay = document.getElementById('loginOverlay');
@@ -2309,10 +2315,11 @@ window.FeishuAuth = {
         }
 
         if (code && state === 'LOGIN') {
-            try {
-                // 清除 URL 参数，避免重复提交
-                // window.history.replaceState({}, document.title, window.location.pathname); 
+            // 立即标记为正在处理 & 清除 URL 中的 code (防止重复使用)
+            this._handlingCallback = true;
+            window.history.replaceState({}, document.title, window.location.pathname);
 
+            try {
                 // 请求后端换票 (自动适配本地/线上环境)
                 const res = await fetch(getApiBaseUrl() + '/api/auth/feishu', {
                     method: 'POST',
@@ -2333,7 +2340,7 @@ window.FeishuAuth = {
                 });
 
                 showToast('登录成功！', 'success');
-                // 刷新页面或重新初始化数据以加载该用户数据
+                // 刷新页面以加载用户数据 (URL 已经干净)
                 setTimeout(() => window.location.reload(), 1000);
 
             } catch (err) {
@@ -2344,8 +2351,9 @@ window.FeishuAuth = {
                 const loginOverlay = document.getElementById('loginOverlay');
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
                 if (loginOverlay) loginOverlay.style.display = 'flex';
+                this._handlingCallback = false;
             }
-            return true; // Handle callback
+            return true;
         }
         return false;
     },
