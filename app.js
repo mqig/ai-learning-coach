@@ -851,49 +851,54 @@ let currentKnowledgePoints = [];
 document.addEventListener('DOMContentLoaded', () => {
     // ===== 飞书登录初始化 =====
     if (typeof FeishuAuth !== 'undefined') {
-        const overlay = document.getElementById('loginOverlay');
-        const logoutBtn = document.getElementById('logoutBtn');
+        (async () => {
+            const overlay = document.getElementById('loginOverlay');
+            const logoutBtn = document.getElementById('logoutBtn');
 
-        // 1. 处理 OAuth 回调
-        FeishuAuth.handleCallback();
+            // 1. 处理 OAuth 回调（必须 await，否则 token 还没保存就检查登录状态）
+            const wasCallback = await FeishuAuth.handleCallback();
 
-        // 绑定退出按钮
-        if (logoutBtn) {
-            logoutBtn.onclick = function (e) {
-                e.preventDefault();
-                FeishuAuth.logout();
-            };
-        }
+            // 如果是回调处理中，页面会自动刷新，无需继续
+            if (wasCallback) return;
 
-        // 2. 检查登录状态（遮罩默认可见，已登录则立即隐藏）
-        if (FeishuAuth.isLoggedIn()) {
-            // 已登录：隐藏遮罩，恢复滚动，显示退出按钮
-            if (overlay) overlay.style.display = 'none';
-            document.body.style.overflow = '';
-            if (logoutBtn) logoutBtn.style.display = 'flex';
-        }
-        // 未登录：遮罩保持默认可见状态，无需额外操作
-
-        // 3. 绑定登录页事件
-        document.getElementById('feishuLoginBtn')?.addEventListener('click', () => {
-            FeishuAuth.login();
-        });
-
-        // 全局捕获阶段监听退出点击
-        window.addEventListener('click', (e) => {
-            if (e.target && (e.target.id === 'logoutBtn' || e.target.closest('#logoutBtn'))) {
-                e.preventDefault();
-                e.stopPropagation();
-                FeishuAuth.logout();
+            // 绑定退出按钮
+            if (logoutBtn) {
+                logoutBtn.onclick = function (e) {
+                    e.preventDefault();
+                    FeishuAuth.logout();
+                };
             }
-        }, true);
 
-        document.getElementById('guestLogin')?.addEventListener('click', () => {
-            if (overlay) overlay.style.display = 'none';
-            document.body.style.overflow = '';
-            // 游客模式：显示退出按钮
-            if (logoutBtn) logoutBtn.style.display = 'flex';
-        });
+            // 2. 检查登录状态（遮罩默认可见，已登录则立即隐藏）
+            if (FeishuAuth.isLoggedIn()) {
+                // 已登录：隐藏遮罩，恢复滚动，显示退出按钮
+                if (overlay) overlay.style.display = 'none';
+                document.body.style.overflow = '';
+                if (logoutBtn) logoutBtn.style.display = 'flex';
+            }
+            // 未登录：遮罩保持默认可见状态
+
+            // 3. 绑定登录页事件
+            document.getElementById('feishuLoginBtn')?.addEventListener('click', () => {
+                FeishuAuth.login();
+            });
+
+            // 全局捕获阶段监听退出点击
+            window.addEventListener('click', (e) => {
+                if (e.target && (e.target.id === 'logoutBtn' || e.target.closest('#logoutBtn'))) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    FeishuAuth.logout();
+                }
+            }, true);
+
+            document.getElementById('guestLogin')?.addEventListener('click', () => {
+                if (overlay) overlay.style.display = 'none';
+                document.body.style.overflow = '';
+                // 游客模式：显示退出按钮
+                if (logoutBtn) logoutBtn.style.display = 'flex';
+            });
+        })();
     }
 
     // 初始化 Config UI
