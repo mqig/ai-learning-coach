@@ -884,13 +884,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. 绑定登录页事件
         document.getElementById('feishuLoginBtn')?.addEventListener('click', () => {
             FeishuAuth.login();
         });
-        document.getElementById('logoutBtn')?.addEventListener('click', () => {
-            FeishuAuth.logout();
+
+        // 使用事件委托处理侧边栏中的退出按钮
+        document.addEventListener('click', (e) => {
+            if (e.target && (e.target.id === 'logoutBtn' || e.target.closest('#logoutBtn'))) {
+                FeishuAuth.logout();
+            }
         });
+
         document.getElementById('guestLogin')?.addEventListener('click', () => {
             if (overlay) overlay.style.display = 'none';
             document.body.style.overflow = ''; // 恢复滚动
