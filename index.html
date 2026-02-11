@@ -546,34 +546,29 @@
             </div>
         </div>
     </div>
-
     <!-- 登录遮罩 -->
     <div id="loginOverlay" class="login-overlay" style="display: none;">
-        <div class="login-box">
-            <div class="login-logo">
-                <span class="logo-emoji">🧠</span>
-            </div>
+        <div class="login-container">
+            <div class="login-logo">🧠</div>
             <h2>登录 AI 学习教练</h2>
             <p>使用飞书账号登录，自动同步您的学习进度</p>
-            <button id="feishuLoginBtn" class="feishu-login-btn">
-                <span style="font-size: 20px; margin-right: 8px;">🐦</span>
+            <button id="feishuLoginBtn" class="login-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 3L12 8L21 3V16L12 21L3 16V3Z" fill="white" opacity="0.9" />
+                </svg>
                 飞书一键登录
             </button>
-            <div class="login-divider">
-                <span>或者</span>
-            </div>
-            <div class="guest-login-link" id="guestLogin">
-                暂不登录，试用本地模式 >
+            <div class="login-footer">
+                <span id="guestLogin">暂不登录，试用本地模式 ›</span>
             </div>
         </div>
     </div>
 
     <!-- 加载遮罩 (登录中) -->
-    <div id="loadingOverlay" class="login-overlay"
-        style="display: none; z-index: 10001; background: rgba(25, 25, 25, 0.95);">
-        <div class="login-box" style="background: transparent; border: none; box-shadow: none;">
+    <div id="loadingOverlay" class="login-overlay" style="display: none; z-index: 10001;">
+        <div class="login-container" style="background: transparent; border: none; box-shadow: none;">
             <div class="loading-spinner"></div>
-            <h3 style="margin-top: 20px; color: var(--text-secondary);">正在登录飞书...</h3>
+            <p style="margin-top: 24px; color: var(--text-secondary); font-size: 1rem;">正在登录飞书...</p>
         </div>
     </div>
 
