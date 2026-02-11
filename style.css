@@ -2403,19 +2403,21 @@ body:has(.sidebar.collapsed) .sidebar-expand-btn {
     cursor: pointer;
 }
 
-/* Login Overlay - Premium Notion Dark Mode */
-#loginOverlay {
+/* Login Overlay */
+.login-overlay,
+#loadingOverlay {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: #191919;
-    /* Notion Dark Background */
-    z-index: 10000;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(25, 25, 25, 0.95);
+    /* 深色磨砂背景 */
+    backdrop-filter: blur(10px);
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 10000;
     color: rgba(255, 255, 255, 0.9);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
