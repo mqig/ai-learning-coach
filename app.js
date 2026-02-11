@@ -48,12 +48,20 @@ const DB = {
         };
     },
 
-    // 添加主题
+    // 添加主题（支持自动重命名）
     addTopic(title, content) {
         const data = this.getAll();
+
+        // 检查重名并自动重命名
+        let newTitle = title;
+        let counter = 1;
+        while (data.topics.some(t => t.title === newTitle)) {
+            newTitle = `${title} (${counter++})`;
+        }
+
         const topic = {
             id: Date.now().toString(),
-            title,
+            title: newTitle,
             content,
             createdAt: new Date().toISOString(),
             knowledgePointIds: []
