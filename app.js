@@ -2268,9 +2268,9 @@ window.FeishuAuth = {
     REFRESH_TOKEN_KEY: 'feishu_user_refresh_token',
     USER_INFO_KEY: 'feishu_user_info',
 
-    // 动态获取当前环境的 Redirect URI
+    // 动态获取当前环境的 Redirect URI (不带末尾斜杠)
     get REDIRECT_URI() {
-        return window.location.origin + '/';
+        return window.location.origin;
     },
 
     // 登录
@@ -2278,6 +2278,7 @@ window.FeishuAuth = {
         const appId = this.APP_ID;
         const redirectUri = encodeURIComponent(this.REDIRECT_URI);
         const url = `https://open.feishu.cn/open-apis/authen/v1/index?app_id=${appId}&redirect_uri=${redirectUri}&state=LOGIN`;
+        console.log('Feishu Login Redirect URI:', this.REDIRECT_URI);
         window.location.href = url;
     },
 
