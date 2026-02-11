@@ -2341,10 +2341,16 @@ window.FeishuAuth = {
 
     // 退出
     logout() {
-        localStorage.removeItem(this.TOKEN_KEY);
-        localStorage.removeItem(this.USER_INFO_KEY);
-        localStorage.removeItem(this.EXPIRE_KEY);
-        localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+        // 清除所有以 feishu_ 开头的 Key
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('feishu_')) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+
         document.body.style.overflow = ''; // 恢复滚动
         window.location.reload();
     },
