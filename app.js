@@ -2300,12 +2300,18 @@ window.FeishuAuth = {
         const code = urlParams.get('code');
         const state = urlParams.get('state');
 
+        // 如果检测到 code 参数，立即显示加载遮罩(loadingOverlay)，同时隐藏登录遮罩(loginOverlay)
+        if (code) {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loginOverlay = document.getElementById('loginOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            if (loginOverlay) loginOverlay.style.display = 'none';
+        }
+
         if (code && state === 'LOGIN') {
             try {
                 // 清除 URL 参数，避免重复提交
-                window.history.replaceState({}, document.title, window.location.pathname);
-
-                showToast('正在登录飞书...', 'info');
+                // window.history.replaceState({}, document.title, window.location.pathname); 
 
                 // 请求后端换票 (自动适配本地/线上环境)
                 const res = await fetch(getApiBaseUrl() + '/api/auth/feishu', {
@@ -2333,6 +2339,11 @@ window.FeishuAuth = {
             } catch (err) {
                 console.error('Login Failed:', err);
                 showToast(`登录失败: ${err.message}`, 'error');
+                // 失败时恢复显示登录遮罩
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                const loginOverlay = document.getElementById('loginOverlay');
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                if (loginOverlay) loginOverlay.style.display = 'flex';
             }
             return true; // Handle callback
         }
