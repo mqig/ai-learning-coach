@@ -233,6 +233,14 @@
                 <div class="modal-tab-content" id="tabFeishu">
                     <div class="modal-body">
                         <div class="feishu-section">
+                            <!-- 登录状态同步提示 -->
+                            <div id="feishuAccountStatus" class="feishu-account-status" style="display: none;
+                                padding: 10px 14px; background: var(--accent-blue-bg); border-radius: 8px;
+                                margin-bottom: 16px; font-size: 0.85rem; color: var(--accent-blue);
+                                display: flex; align-items: center; gap: 8px;">
+                                <span>🔗</span>
+                                <span id="feishuAccountText">已通过飞书登录</span>
+                            </div>
                             <h3 class="feishu-section-title">📋 飞书应用凭证</h3>
                             <p class="config-hint">在 <a href="https://open.feishu.cn" target="_blank">飞书开放平台</a>
                                 创建应用获取以下信息</p>

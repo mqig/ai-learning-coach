@@ -2320,6 +2320,16 @@ window.FeishuAuth = {
                     avatar: data.avatar_url || ''
                 });
 
+                // 登录成功后自动同步 App ID 到飞书同步模块
+                if (typeof FeishuSync !== 'undefined') {
+                    const syncConfig = FeishuSync.getConfig();
+                    if (!syncConfig.appId) {
+                        syncConfig.appId = this.APP_ID;
+                        FeishuSync.saveConfig(syncConfig);
+                        console.log('已自动同步登录 App ID 到飞书同步配置');
+                    }
+                }
+
                 showToast('登录成功！', 'success');
                 // 刷新页面以加载用户数据 (URL 已经干净)
                 setTimeout(() => window.location.reload(), 1000);
@@ -2870,21 +2880,45 @@ const FeishuSync = {
     // UI 初始化：加载配置到表单
     loadConfigToUI() {
         const config = this.getConfig();
-        const appId = document.getElementById('feishuAppId');
+        const appIdEl = document.getElementById('feishuAppId');
         const appSecret = document.getElementById('feishuAppSecret');
         const appToken = document.getElementById('feishuAppToken');
         const autoSync = document.getElementById('feishuAutoSync');
 
-        if (appId) appId.value = config.appId || '';
+        // 自动从登录账号同步 App ID（如果未手动配置）
+        if (typeof FeishuAuth !== 'undefined' && FeishuAuth.isLoggedIn()) {
+            if (!config.appId && FeishuAuth.APP_ID) {
+                config.appId = FeishuAuth.APP_ID;
+                this.saveConfig(config);
+            }
+        }
+
+        if (appIdEl) appIdEl.value = config.appId || '';
         if (appSecret) appSecret.value = config.appSecret || '';
         if (appToken) appToken.value = config.appToken || '';
         if (autoSync) autoSync.checked = !!config.autoSync;
 
-        // 更新状态
-        if (this.isConfigured()) {
-            this.setStatus('已配置（点击测试连接）', 'idle');
+        // 更新状态：区分已登录和未登录
+        const accountStatusEl = document.getElementById('feishuAccountStatus');
+        const accountTextEl = document.getElementById('feishuAccountText');
+        if (typeof FeishuAuth !== 'undefined' && FeishuAuth.isLoggedIn()) {
+            const user = FeishuAuth.getUser();
+            const userName = user ? user.name : '飞书用户';
+            // 显示已关联账号提示
+            if (accountStatusEl) accountStatusEl.style.display = 'flex';
+            if (accountTextEl) accountTextEl.textContent = `已关联飞书账号：${userName}（App ID 已自动同步）`;
+            if (this.isConfigured()) {
+                this.setStatus(`✅ 已关联账号：${userName}`, 'success');
+            } else {
+                this.setStatus(`👤 已登录：${userName}（请补充 Secret 和表格 Token）`, 'idle');
+            }
         } else {
-            this.setStatus('未配置', 'idle');
+            if (accountStatusEl) accountStatusEl.style.display = 'none';
+            if (this.isConfigured()) {
+                this.setStatus('已配置（点击测试连接）', 'idle');
+            } else {
+                this.setStatus('未配置', 'idle');
+            }
         }
     },
 
