@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 学习教练 | LearnFlow</title>
+    <meta name="description" content="基于 AI 的智能学习教练系统，帮助你高效学习和复习">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 侧边栏展开按钮（收起后显示） -->
+    <button class="sidebar-expand-btn" id="sidebarExpandBtn" title="展开侧边栏">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12H21M3 6H21M3 18H21" stroke-linecap="round" />
+        </svg>
+    </button>
+
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-icon">🧠</span>
+                <span class="logo-text">LearnFlow</span>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="收起侧边栏">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">学习空间</div>
+                <a href="#" class="nav-item active" data-page="input">
+                    <span class="nav-icon">📥</span>
+                    <span class="nav-label">输入学习</span>
+                </a>
+                <a href="#" class="nav-item" data-page="practice">
+                    <span class="nav-icon">🎯</span>
+                    <span class="nav-label">费曼检验</span>
+                </a>
+                <a href="#" class="nav-item" data-page="knowledge">
+                    <span class="nav-icon">🧩</span>
+                    <span class="nav-label">知识图谱</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">复习中心</div>
+                <a href="#" class="nav-item" data-page="review">
+                    <span class="nav-icon">🔄</span>
+                    <span class="nav-label">今日复习</span>
+                    <span class="nav-badge" id="reviewBadge">0</span>
+                </a>
+                <a href="#" class="nav-item" data-page="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">学习仪表盘</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="totalTopics">0</span>
+                    <span class="stat-label">已学主题</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="totalQuestions">0</span>
+                    <span class="stat-label">已答题目</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content" id="mainContent">
+        <!-- 右上角 AI 配置按钮 -->
+        <button class="ai-config-btn" id="aiConfigBtn" title="AI 后台配置">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3" />
+                <path
+                    d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+            <span class="config-status" id="configStatus"></span>
+        </button>
+
+        <!-- AI 配置弹窗 -->
+        <div id="aiConfigModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>⚙️ AI 后台</h2>
+                    <button class="modal-close" id="closeConfigModal">&times;</button>
+                </div>
+
+                <!-- Tab 导航 -->
+                <div class="modal-tabs">
+                    <button class="modal-tab active" data-tab="config">🔧 配置</button>
+                    <button class="modal-tab" data-tab="logs">📋 日志 <span class="log-count"
+                            id="logCount">0</span></button>
+                </div>
+
+                <!-- 配置 Tab -->
+                <div class="modal-tab-content active" id="tabConfig">
+                    <div class="modal-body">
+                        <!-- API 提供商 -->
+                        <div class="config-group">
+                            <label class="config-label">API 提供商</label>
+                            <select class="config-select" id="cfgProvider">
+                                <option value="openai">OpenAI / 兼容接口</option>
+                                <option value="claude">Claude (Anthropic)</option>
+                                <option value="gemini">Gemini (Google)</option>
+                                <option value="deepseek">DeepSeek</option>
+                                <option value="custom">自定义 (OpenAI 兼容)</option>
+                            </select>
+                            <p class="config-hint">大多数中转服务商都兼容 OpenAI 格式</p>
+                        </div>
+
+                        <!-- Base URL -->
+                        <div class="config-group">
+                            <label class="config-label">API Base URL</label>
+                            <input type="text" class="config-input" id="cfgBaseUrl"
+                                placeholder="https://api.openai.com">
+                            <p class="config-hint">修改此地址可对接中转 / 代理服务</p>
+                        </div>
+
+                        <!-- API Key -->
+                        <div class="config-group">
+                            <label class="config-label">API Key</label>
+                            <div class="config-input-group">
+                                <input type="password" class="config-input" id="cfgApiKey" placeholder="sk-...">
+                                <button class="btn btn-sm btn-ghost toggle-password" id="toggleKeyBtn">👁️</button>
+                            </div>
+                            <p class="config-hint">密钥仅存储在本地浏览器中，不会上传到任何服务器</p>
+                        </div>
+
+                        <!-- 模型 -->
+                        <div class="config-group">
+                            <label class="config-label">模型名称</label>
+                            <input type="text" class="config-input" id="cfgModel" placeholder="gpt-4o-mini">
+                            <p class="config-hint">示例：gpt-4o-mini、claude-sonnet-4-20250514、deepseek-chat</p>
+                        </div>
+
+                        <hr class="config-divider">
+
+                        <!-- 知识点提取提示词 -->
+                        <div class="config-group">
+                            <label class="config-label">
+                                📝 知识点提取提示词
+                                <button class="btn btn-xs btn-ghost" id="resetExtractPrompt" title="恢复默认">🔄
+                                    恢复默认</button>
+                            </label>
+                            <textarea class="config-textarea" id="cfgExtractPrompt" rows="8"></textarea>
+                        </div>
+
+                        <!-- 答案评估提示词 -->
+                        <div class="config-group">
+                            <label class="config-label">
+                                🎯 答案评估提示词
+                                <button class="btn btn-xs btn-ghost" id="resetEvalPrompt" title="恢复默认">🔄 恢复默认</button>
+                            </label>
+                            <textarea class="config-textarea" id="cfgEvalPrompt" rows="8"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-ghost" id="testApiBtn">🧪 测试连接</button>
+                        <div class="modal-footer-right">
+                            <button class="btn btn-ghost" id="cancelConfigBtn">取消</button>
+                            <button class="btn btn-primary" id="saveConfigBtn">💾 保存配置</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 日志 Tab -->
+                <div class="modal-tab-content" id="tabLogs">
+                    <div class="modal-body">
+                        <div class="log-toolbar">
+                            <span class="log-toolbar-info" id="logInfo">共 0 条日志</span>
+                            <button class="btn btn-xs btn-ghost" id="clearLogsBtn">🗑️ 清除全部</button>
+                        </div>
+                        <div class="log-list" id="logList">
+                            <div class="log-empty">暂无 API 调用日志</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="modal-footer-right">
+                            <button class="btn btn-ghost" id="closeLogsBtn">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面1：输入学习 -->
+        <section class="page active" id="page-input">
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <span>学习空间</span>
+                    <span class="breadcrumb-sep">/</span>
+                    <span>输入学习</span>
+                </div>
+                <h1 class="page-title">📥 输入学习内容</h1>
+                <p class="page-desc">粘贴文章内容或输入学习笔记，AI 将帮你提取知识点并生成针对性练习题</p>
+            </div>
+
+            <div class="content-card">
+                <div class="card-header">
+                    <h3>学习内容</h3>
+                    <div class="card-actions">
+                        <input type="text" class="input-title" id="articleTitle" placeholder="给这次学习起个标题...">
+                    </div>
+                </div>
+                <div class="card-body">
+                    <textarea class="article-input" id="articleInput"
+                        placeholder="在这里粘贴文章内容、学习笔记或任何你想要学习的材料...&#10;&#10;支持：&#10;• 微信公众号文章内容&#10;• 技术文档笔记&#10;• 课程要点摘录&#10;• 任何知识性内容"></textarea>
+                </div>
+                <div class="card-footer">
+                    <div class="input-stats">
+                        <span id="charCount">0</span> 字
+                    </div>
+                    <button class="btn btn-primary" id="analyzeBtn">
+                        <span class="btn-icon">✨</span>
+                        AI 提取知识点
+                    </button>
+                </div>
+            </div>
+
+            <!-- 知识点提取结果 -->
+            <div class="content-card hidden" id="knowledgeResult">
+                <div class="card-header">
+                    <h3>🧩 提取的知识点</h3>
+                    <div class="card-actions">
+                        <button class="btn btn-sm btn-ghost" id="editKnowledgeBtn">编辑</button>
+                        <button class="btn btn-sm btn-primary" id="startPracticeBtn">
+                            <span class="btn-icon">🎯</span>
+                            开始费曼检验
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="knowledge-list" id="knowledgeList">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+            </div>
+            <!-- #knowledgeResult 结束 -->
+
+        </section>
+        <!-- #page-input 结束 -->
+
+        <!-- 页面2：知识图谱 -->
+        <section class="page" id="page-knowledge">
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <span>学习空间</span>
+                    <span class="breadcrumb-sep">/</span>
+                    <span>知识图谱</span>
+                </div>
+                <h1 class="page-title">🧩 知识图谱</h1>
+                <p class="page-desc">所有已学习的知识点，按主题分组展示</p>
+            </div>
+            <div class="knowledge-graph-container" id="knowledgeGraph">
+                <div class="empty-state">
+                    <div class="empty-icon">📚</div>
+                    <h3>还没有知识点</h3>
+                    <p>去「输入学习」页面添加你的第一份学习材料吧</p>
+                    <button class="btn btn-primary" onclick="switchPage('input')">开始学习</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 页面3：费曼检验 -->
+        <section class="page" id="page-practice">
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <span>学习空间</span>
+                    <span class="breadcrumb-sep">/</span>
+                    <span>费曼检验</span>
+                </div>
+                <h1 class="page-title">🎯 费曼检验</h1>
+                <p class="page-desc">用自己的话解释知识点，检验是否真正理解</p>
+            </div>
+
+            <div class="practice-container" id="practiceContainer">
+                <div class="empty-state">
+                    <div class="empty-icon">🎯</div>
+                    <h3>暂无练习题</h3>
+                    <p>先在「输入学习」中提取知识点，然后开始费曼检验</p>
+                    <button class="btn btn-primary" onclick="switchPage('input')">去输入学习</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 页面4：今日复习 -->
+        <section class="page" id="page-review">
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <span>复习中心</span>
+                    <span class="breadcrumb-sep">/</span>
+                    <span>今日复习</span>
+                </div>
+                <h1 class="page-title">🔄 今日复习</h1>
+                <p class="page-desc">基于遗忘曲线，智能安排复习计划</p>
+            </div>
+
+            <div class="review-container" id="reviewContainer">
+                <div class="empty-state">
+                    <div class="empty-icon">🎉</div>
+                    <h3>今日没有待复习的内容</h3>
+                    <p>当你完成学习后，系统会根据遗忘曲线自动安排复习时间</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 页面5：学习仪表盘 -->
+        <section class="page" id="page-dashboard">
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <span>复习中心</span>
+                    <span class="breadcrumb-sep">/</span>
+                    <span>学习仪表盘</span>
+                </div>
+                <h1 class="page-title">📊 学习仪表盘</h1>
+                <p class="page-desc">可视化你的学习进度和知识掌握度</p>
+            </div>
+
+            <div class="dashboard-container">
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-icon">📚</div>
+                        <div class="stat-card-info">
+                            <div class="stat-card-value" id="dashTotalTopics">0</div>
+                            <div class="stat-card-label">学习主题</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon">🧩</div>
+                        <div class="stat-card-info">
+                            <div class="stat-card-value" id="dashTotalKnowledge">0</div>
+                            <div class="stat-card-label">知识点</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon">✅</div>
+                        <div class="stat-card-info">
+                            <div class="stat-card-value" id="dashTotalAnswered">0</div>
+                            <div class="stat-card-label">已答题目</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon">🔥</div>
+                        <div class="stat-card-info">
+                            <div class="stat-card-value" id="dashStreak">0</div>
+                            <div class="stat-card-label">连续学习天数</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学习热力图 -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>📅 学习热力图</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="heatmap-container" id="heatmapContainer">
+                            <!-- 动态生成 -->
+                        </div>
+                        <div class="heatmap-legend">
+                            <span>少</span>
+                            <div class="legend-cell level-0"></div>
+                            <div class="legend-cell level-1"></div>
+                            <div class="legend-cell level-2"></div>
+                            <div class="legend-cell level-3"></div>
+                            <div class="legend-cell level-4"></div>
+                            <span>多</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 遗忘曲线 -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>📉 遗忘曲线追踪</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="forgetting-curve" id="forgettingCurve">
+                            <canvas id="curveCanvas" width="700" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近学习记录 -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>🕐 最近学习记录</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="recent-list" id="recentList">
+                            <div class="empty-state small">
+                                <p>暂无学习记录</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="打开菜单">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+    </button>
+
+    <!-- 遮罩层 -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 通用 CRUD 模态框 -->
+    <div id="crudModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="crudModalTitle">标题</h2>
+                <button class="modal-close" id="crudModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="crudType">
+                <input type="hidden" id="crudId">
+                <input type="hidden" id="crudParentId">
+
+                <div class="config-group">
+                    <label class="config-label">名称</label>
+                    <input type="text" class="config-input" id="crudTitleInput" placeholder="请输入名称">
+                </div>
+
+                <div class="config-group" id="crudDescGroup">
+                    <label class="config-label">描述 (可选)</label>
+                    <textarea class="config-textarea" id="crudDescInput" rows="3" placeholder="请输入简短描述"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-right">
+                    <button class="btn btn-ghost" id="crudCancelBtn">取消</button>
+                    <button class="btn btn-primary" id="crudSaveBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmTitle">⚠️ 确认操作</h3>
+                <button class="modal-close" id="confirmClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage" style="color: var(--text-secondary); margin: 0; line-height: 1.6;">
+                    确定要执行此操作吗？</p>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-right">
+                    <button class="btn btn-ghost" id="confirmCancelBtn">取消</button>
+                    <button class="btn btn-danger" id="confirmOkBtn">删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
