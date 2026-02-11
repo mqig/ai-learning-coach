@@ -2565,9 +2565,9 @@ const FeishuSync = {
             })
         });
 
-        const result = await resp.json();
-        if (!resp.ok || result.error) {
-            throw new Error(result.error || `HTTP ${resp.status}`);
+        const result = await res.json();
+        if (!res.ok || result.error) {
+            throw new Error(result.error || `HTTP ${res.status}`);
         }
         return result;
     },
