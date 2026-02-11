@@ -27,7 +27,7 @@ const DB = {
 
     // 保存全部数据
     saveAll(data) {
-        localStorage.setItem(this.KEY, JSON.stringify(data));
+        localStorage.setItem(this.getKey(), JSON.stringify(data));
 
         // 尝试触发飞书自动同步
         if (typeof FeishuSync !== 'undefined') {
@@ -849,11 +849,49 @@ let currentKnowledgePoints = [];
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
+    // ===== 飞书登录初始化 =====
+    if (typeof FeishuAuth !== 'undefined') {
+        const overlay = document.getElementById('loginOverlay');
+        const userInfo = document.getElementById('userInfo');
+
+        // 1. 处理 OAuth 回调
+        FeishuAuth.handleCallback();
+
+        // 2. 检查登录状态
+        if (FeishuAuth.isLoggedIn()) {
+            // 已登录：隐藏遮罩，显示用户信息
+            if (overlay) overlay.style.display = 'none';
+            if (userInfo) {
+                userInfo.style.display = 'flex';
+                const user = FeishuAuth.getUser();
+                if (user) {
+                    document.getElementById('userName').textContent = user.name;
+                    if (user.avatar) document.getElementById('userAvatar').src = user.avatar;
+                }
+            }
+        } else {
+            // 未登录：显示遮罩
+            if (overlay) overlay.style.display = 'flex';
+        }
+
+        // 3. 绑定登录页事件
+        document.getElementById('feishuLoginBtn')?.addEventListener('click', () => {
+            FeishuAuth.login();
+        });
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            FeishuAuth.logout();
+        });
+        document.getElementById('guestLogin')?.addEventListener('click', () => {
+            if (overlay) overlay.style.display = 'none';
+        });
+    }
+
+    // 初始化 Config UI
+    initAIConfig();
     initNavigation();
     initCRUD();
     initConfirmModal();
     initInputPage();
-    initAIConfig();
     updateStats();
     updateReviewBadge();
     renderDashboard();
@@ -2188,6 +2226,109 @@ function handleCrudDelete(type, id) {
 }
 
 
+// ===== 飞书授权管理 =====
+const FeishuAuth = {
+    // 飞书 App ID (需替换为您的实际 App ID)
+    APP_ID: 'cli_a906a5b58876dbc7', // Updated App ID
+    // For local dev/vercel, redirect URI is usually:
+    REDIRECT_URI: window.location.origin + '/callback', // We need to handle this route in index.html or hash routing
+
+    // 状态 Key
+    TOKEN_KEY: 'feishu_user_token',
+    USER_INFO_KEY: 'feishu_user_info',
+
+    // 登录
+    login() {
+        // 构建授权 URL
+        const redirectUri = encodeURIComponent(window.location.origin); // Simplest callback to root
+        const appId = this.APP_ID;
+        const scope = 'contact:user.id:readonly bitable:app:readonly bitable:app:read_write'; // Need permissions
+        // Feishu OAuth URL (Web app)
+        const url = `https://open.feishu.cn/open-apis/authen/v1/index?app_id=${appId}&redirect_uri=${redirectUri}&state=LOGIN`;
+        window.location.href = url;
+    },
+
+    // 处理回调 (在页面加载时检查 URL param 'code')
+    async handleCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+
+        if (code && state === 'LOGIN') {
+            try {
+                // 清除 URL 参数，避免重复提交
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                showToast('正在登录飞书...', 'info');
+
+                // 请求后端换票
+                const res = await fetch('/api/auth/feishu', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                // 保存 Token
+                this.setToken(data.access_token, data.expires_in, data.refresh_token);
+                // 保存 User Info (open_id as user ID)
+                this.setUserInfo({
+                    id: data.open_id,
+                    name: data.name || '飞书用户',
+                    avatar: data.avatar_url || ''
+                });
+
+                showToast('登录成功！', 'success');
+                // 刷新页面或重新初始化数据以加载该用户数据
+                setTimeout(() => window.location.reload(), 1000);
+
+            } catch (err) {
+                console.error('Login Failed:', err);
+                showToast(`登录失败: ${err.message}`, 'error');
+            }
+            return true; // Handle callback
+        }
+        return false;
+    },
+
+    // 退出
+    logout() {
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.USER_INFO_KEY);
+        // 重置为默认数据 Key
+        window.location.reload();
+    },
+
+    // 获取当前 Token
+    getToken() {
+        const token = localStorage.getItem(this.TOKEN_KEY);
+        // TODO: Check expiration (simplified for MVP)
+        return token;
+    },
+
+    // 获取用户信息
+    getUser() {
+        try {
+            return JSON.parse(localStorage.getItem(this.USER_INFO_KEY));
+        } catch { return null; }
+    },
+
+    setToken(token, expiresIn, refreshToken) {
+        localStorage.setItem(this.TOKEN_KEY, token);
+        // Store expiry time if needed
+    },
+
+    setUserInfo(user) {
+        localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(user));
+    },
+
+    isLoggedIn() {
+        return !!this.getToken();
+    }
+};
+
 // ===== 飞书多维表格同步模块 =====
 const FeishuSync = {
     CONFIG_KEY: 'learnflow_feishu_config',
@@ -2239,16 +2380,27 @@ const FeishuSync = {
         }
     },
 
+    // 获取当前配置 Key
+    getConfigKey() {
+        if (typeof FeishuAuth !== 'undefined' && FeishuAuth.isLoggedIn()) {
+            const user = FeishuAuth.getUser();
+            if (user && user.id) {
+                return `learnflow_feishu_config_${user.id}`;
+            }
+        }
+        return 'learnflow_feishu_config';
+    },
+
     // 获取配置
     getConfig() {
         try {
-            return JSON.parse(localStorage.getItem(this.CONFIG_KEY)) || {};
+            return JSON.parse(localStorage.getItem(this.getConfigKey())) || {};
         } catch { return {}; }
     },
 
     // 保存配置
     saveConfig(config) {
-        localStorage.setItem(this.CONFIG_KEY, JSON.stringify(config));
+        localStorage.setItem(this.getConfigKey(), JSON.stringify(config));
     },
 
     // 判断是否已配置

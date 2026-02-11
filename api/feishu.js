@@ -208,9 +208,7 @@ async function handleBatchCreate(res, appId, appSecret, appToken, tableId, data)
 }
 
 // 删除表中所有记录（先查再删）
-async function handleDeleteAllRecords(res, appId, appSecret, appToken, tableId) {
-    const token = await getTenantToken(appId, appSecret);
-
+async function handleDeleteAllRecords(res, accessToken, appToken, tableId) {
     // 先获取所有记录 ID
     const allIds = [];
     let pageToken = undefined;
@@ -220,7 +218,7 @@ async function handleDeleteAllRecords(res, appId, appSecret, appToken, tableId) 
         if (pageToken) url += `&page_token=${pageToken}`;
 
         const resp = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         const result = await resp.json();
         if (result.code !== 0) {
