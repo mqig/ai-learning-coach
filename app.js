@@ -857,6 +857,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. 处理 OAuth 回调
         FeishuAuth.handleCallback();
 
+        // 尝试绑定退出按钮（如果存在）
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.onclick = function (e) {
+                e.preventDefault();
+                FeishuAuth.logout();
+            };
+        }
+
         // 2. 检查登录状态
         if (FeishuAuth.isLoggedIn()) {
             // 已登录：隐藏遮罩，显示用户信息
@@ -884,16 +893,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // 3. 绑定登录页事件
         document.getElementById('feishuLoginBtn')?.addEventListener('click', () => {
             FeishuAuth.login();
         });
 
-        // 使用事件委托处理侧边栏中的退出按钮
-        document.addEventListener('click', (e) => {
+        // 【终极修复】使用全局捕获阶段监听器处理退出
+        // 确保在任何 stopPropagation 之前捕获点击
+        window.addEventListener('click', (e) => {
             if (e.target && (e.target.id === 'logoutBtn' || e.target.closest('#logoutBtn'))) {
+                e.preventDefault();
+                e.stopPropagation(); // 防止其他逻辑干扰
+                console.log('Logout triggered via global capture');
                 FeishuAuth.logout();
             }
-        });
+        }, true); // useCapture = true
 
         document.getElementById('guestLogin')?.addEventListener('click', () => {
             if (overlay) overlay.style.display = 'none';
@@ -2256,7 +2270,9 @@ function getApiBaseUrl() {
 }
 
 // ===== 飞书授权管理 =====
-const FeishuAuth = {
+// Feishu OAuth Configuration & Logic
+// Make it globally accessible for event handlers
+window.FeishuAuth = {
     // 飞书 App ID (需替换为您的实际 App ID)
     APP_ID: 'cli_a906a5b58876dbc7', // Updated App ID
     // For local dev/vercel, use explicit Vercel URL as redirect URI
