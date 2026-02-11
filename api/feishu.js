@@ -51,7 +51,9 @@ module.exports = async function handler(req, res) {
         }
     } catch (err) {
         console.error('飞书 API 代理错误:', err);
-        return res.status(500).json({ error: err.message || '服务器内部错误' });
+        if (!res.headersSent) {
+            return res.status(500).json({ error: err.message || '服务器内部错误' });
+        }
     }
 }
 
@@ -208,8 +210,8 @@ async function handleBatchCreate(res, appId, appSecret, appToken, tableId, data)
 }
 
 // 删除表中所有记录（先查再删）
-async function handleDeleteAllRecords(res, accessToken, appToken, tableId) {
-    // 先获取所有记录 ID
+async function handleDeleteAllRecords(res, appId, appSecret, appToken, tableId) {
+    const token = await getTenantToken(appId, appSecret);
     const allIds = [];
     let pageToken = undefined;
 
@@ -218,7 +220,7 @@ async function handleDeleteAllRecords(res, accessToken, appToken, tableId) {
         if (pageToken) url += `&page_token=${pageToken}`;
 
         const resp = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await resp.json();
         if (result.code !== 0) {
