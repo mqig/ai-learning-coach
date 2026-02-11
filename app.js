@@ -507,30 +507,48 @@ async function callClaudeAPI(baseUrl, apiKey, model, systemPrompt, userContent) 
     return data.content[0].text;
 }
 
-// 从 AI 响应中解析 JSON
+// 从 AI 响应中解析 JSON (容错性增强版)
 function parseAIJSON(text) {
-    // 尝试直接解析
+    if (!text) throw new Error('AI 返回内容为空');
+
+    // 清理文本周围的空白字符
+    const cleanText = text.trim();
+
+    // 1. 尝试直接解析
     try {
-        return JSON.parse(text);
+        return JSON.parse(cleanText);
     } catch { }
 
-    // 尝试从 markdown 代码块中提取
-    const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+    // 2. 尝试从 markdown 代码块中提取 (处理 ```json ... ```)
+    const codeBlockMatch = cleanText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
     if (codeBlockMatch) {
         try {
             return JSON.parse(codeBlockMatch[1].trim());
         } catch { }
     }
 
-    // 尝试找到 JSON 数组或对象
-    const jsonMatch = text.match(/(\[\s*\{[\s\S]*\}\s*\]|\{[\s\S]*\})/);
-    if (jsonMatch) {
-        try {
-            return JSON.parse(jsonMatch[1]);
-        } catch { }
+    // 3. 寻找 [ 或 { 开头并以 ] 或 } 结尾的第一个最长连续块
+    // 这种方法能有效过滤掉 AI 在 JSON 前后添加的废话
+    const jsonBoundaries = [
+        { start: '[', end: ']' },
+        { start: '{', end: '}' }
+    ];
+
+    for (const boundary of jsonBoundaries) {
+        const startIdx = cleanText.indexOf(boundary.start);
+        const endIdx = cleanText.lastIndexOf(boundary.end);
+
+        if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+            const potentialJson = cleanText.substring(startIdx, endIdx + 1);
+            try {
+                return JSON.parse(potentialJson);
+            } catch (e) {
+                console.warn(`Attempted to parse JSON within ${boundary.start}${boundary.end} but failed:`, e);
+            }
+        }
     }
 
-    throw new Error('无法解析 AI 返回的 JSON 内容');
+    throw new Error('无法从响应中解析出有效的 JSON 格式');
 }
 
 
