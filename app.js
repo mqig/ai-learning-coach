@@ -2292,9 +2292,9 @@ window.FeishuAuth = {
     REFRESH_TOKEN_KEY: 'feishu_user_refresh_token',
     USER_INFO_KEY: 'feishu_user_info',
 
-    // 动态获取当前环境的 Redirect URI (不带末尾斜杠)
+    // 动态获取当前环境的 Redirect URI (带末尾斜杠，飞书后台配置必须与此完全一致)
     get REDIRECT_URI() {
-        return window.location.origin;
+        return window.location.origin + '/';
     },
 
     // 登录
@@ -2987,6 +2987,23 @@ const FeishuSync = {
             } else {
                 this.setStatus('未配置', 'idle');
             }
+        }
+
+        // 显示当前重定向 URI，方便用户复制到飞书后台
+        const redirectEl = document.getElementById('feishuRedirectUriDisplay');
+        if (redirectEl) {
+            redirectEl.value = typeof FeishuAuth !== 'undefined' ? FeishuAuth.REDIRECT_URI : window.location.origin + '/';
+        }
+        const copyBtn = document.getElementById('copyRedirectBtn');
+        if (copyBtn) {
+            copyBtn.onclick = (e) => {
+                e.preventDefault();
+                const val = document.getElementById('feishuRedirectUriDisplay')?.value;
+                if (val) {
+                    navigator.clipboard.writeText(val);
+                    showToast('已复制跳转地址', 'success');
+                }
+            };
         }
     },
 

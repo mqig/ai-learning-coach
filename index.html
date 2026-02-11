@@ -243,6 +243,18 @@
                             <h3 class="feishu-section-title">📋 飞书应用凭证</h3>
                             <p class="config-hint">在 <a href="https://open.feishu.cn" target="_blank">飞书开放平台</a>
                                 创建应用获取以下信息</p>
+
+                            <!-- 重定向 URL 指引 -->
+                            <div class="config-group"
+                                style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; border: 1px dashed var(--border-color);">
+                                <label class="config-label" style="color: var(--accent-blue);">🔗 飞书后台重定向 URL 设置</label>
+                                <div class="config-input-group" style="margin-top: 8px;">
+                                    <input type="text" class="config-input" id="feishuRedirectUriDisplay" readonly
+                                        style="font-family: monospace; font-size: 0.8rem; background: transparent; cursor: default;">
+                                    <button class="btn btn-sm btn-ghost" id="copyRedirectBtn" title="复制 URL">📋</button>
+                                </div>
+                                <p class="config-hint" style="margin-top: 6px;">请将此地址复制到飞书后台“安全设置”的重定向 URL 中</p>
+                            </div>
                             <div class="config-group">
                                 <label class="config-label">App ID</label>
                                 <input type="text" class="config-input" id="feishuAppId" placeholder="cli_xxxxx">
