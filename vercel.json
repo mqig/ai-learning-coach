@@ -18,6 +18,6 @@
   ],
   "env": {
     "FEISHU_APP_ID": "cli_a906a5b58876dbc7",
-    "FEISHU_APP_SECRET": "WKNFZgz4AKaOGd7Uha5Occ2fwqxPTR3j"
+    "FEISHU_APP_SECRET": "SECRET_IN_ENV_VAR"
   }
 }

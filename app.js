@@ -2230,8 +2230,8 @@ function handleCrudDelete(type, id) {
 const FeishuAuth = {
     // 飞书 App ID (需替换为您的实际 App ID)
     APP_ID: 'cli_a906a5b58876dbc7', // Updated App ID
-    // For local dev/vercel, redirect URI is usually:
-    REDIRECT_URI: window.location.origin + '/callback', // We need to handle this route in index.html or hash routing
+    // For local dev/vercel, use current URL (without query params) as redirect URI
+    REDIRECT_URI: window.location.href.split('?')[0],
 
     // 状态 Key
     TOKEN_KEY: 'feishu_user_token',
