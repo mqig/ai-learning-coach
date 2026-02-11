@@ -2445,6 +2445,20 @@ window.FeishuAuth = {
 
     isLoggedIn() {
         return !!localStorage.getItem(this.TOKEN_KEY);
+    },
+
+    getUser() {
+        try {
+            return JSON.parse(localStorage.getItem(this.USER_INFO_KEY) || 'null');
+        } catch { return null; }
+    },
+
+    logout() {
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.EXPIRE_KEY);
+        localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+        localStorage.removeItem(this.USER_INFO_KEY);
+        window.location.reload();
     }
 };
 
