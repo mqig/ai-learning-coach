@@ -2403,62 +2403,153 @@ body:has(.sidebar.collapsed) .sidebar-expand-btn {
     cursor: pointer;
 }
 
-/* Login Overlay */
+/* Login Overlay - Premium Notion Dark Mode */
 #loginOverlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(10px);
+    background: #191919;
+    /* Notion Dark Background */
     z-index: 10000;
-    /* Max z-index */
     display: flex;
     justify-content: center;
     align-items: center;
+    color: rgba(255, 255, 255, 0.9);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 .login-container {
+    background: #202020;
+    /* Slightly lighter card */
+    padding: 3rem 2.5rem;
+    border-radius: 12px;
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
+    /* Subtle border */
     text-align: center;
-    background: var(--card-bg);
-    padding: 3rem;
-    border-radius: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
+    max-width: 420px;
     width: 90%;
-    animation: fadeIn 0.5s ease-out;
+    animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle gloss effect */
+.login-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
 .login-logo {
-    font-size: 4rem;
+    font-size: 3.5rem;
     margin-bottom: 1rem;
+    display: inline-block;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    animation: float 6s ease-in-out infinite;
+}
+
+.login-container h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #fff;
+    letter-spacing: -0.02em;
+}
+
+.login-container p {
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
 }
 
 .login-btn {
     width: 100%;
-    margin-top: 2rem;
-    padding: 1rem;
-    font-size: 1.1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    background: #3370ff;
-    /* Feishu Blue */
-    color: white;
+    padding: 0.8rem;
+    font-size: 1rem;
+    border-radius: 6px;
     border: none;
-    border-radius: 8px;
     cursor: pointer;
-    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    font-weight: 500;
 }
 
-.login-btn:hover {
-    background: #2858cc;
+#feishuLoginBtn {
+    background: #3370FF;
+    /* Feishu Blue */
+    color: white;
+    box-shadow: 0 4px 12px rgba(51, 112, 255, 0.25);
+    /* margin-bottom: 1rem; removed for cleaner look if unique */
+}
+
+#feishuLoginBtn:hover {
+    background: #295AD9;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(51, 112, 255, 0.35);
+}
+
+#feishuLoginBtn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 6px rgba(51, 112, 255, 0.2);
 }
 
 .login-footer {
     margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#guestLogin {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#guestLogin:hover {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
 }
 
 /* User Info in Header */
@@ -2488,18 +2579,6 @@ body:has(.sidebar.collapsed) .sidebar-expand-btn {
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--text-color);
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 /* Header Right Alignment */
