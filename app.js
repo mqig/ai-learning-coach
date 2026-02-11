@@ -27,7 +27,7 @@ const DB = {
 
     // 保存全部数据
     saveAll(data) {
-        localStorage.setItem(this.getKey(), JSON.stringify(data));
+        localStorage.setItem(this.KEY, JSON.stringify(data));
 
         // 尝试触发飞书自动同步
         if (typeof FeishuSync !== 'undefined') {
