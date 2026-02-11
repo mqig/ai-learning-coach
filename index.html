@@ -67,6 +67,12 @@
         </nav>
 
         <div class="sidebar-footer">
+            <!-- 用户信息 (登录后显示) -->
+            <div id="userInfo" class="user-info sidebar-user" style="display: none;">
+                <img id="userAvatar" src="" alt="Avatar" class="user-avatar">
+                <span id="userName">User</span>
+                <button id="logoutBtn" class="icon-btn" title="退出登录">🚪</button>
+            </div>
             <div class="sidebar-stats">
                 <div class="stat-item">
                     <span class="stat-value" id="totalTopics">0</span>
@@ -541,44 +547,25 @@
         </div>
     </div>
 
-    <!-- Login Overlay -->
+    <!-- Login Overlay (必须在 DOM 最末尾，确保覆盖所有元素) -->
     <div id="loginOverlay" style="display: none;">
         <div class="login-container">
             <div class="login-logo">🚀</div>
             <h2>AI 学习教练</h2>
             <p>连接飞书，开启高效学习之旅</p>
-            <button id="feishuLoginBtn" class="primary-btn login-btn">
+            <button id="feishuLoginBtn" class="login-btn">
                 <span class="icon">🤖</span> 飞书一键登录
             </button>
             <div class="login-footer">
-                <span id="guestLogin" style="cursor: pointer; color: #888; font-size: 0.9rem;">暂不登录，试用本地模式
-                    &gt;</span>
+                <span id="guestLogin">暂不登录，试用本地模式 &gt;</span>
             </div>
         </div>
     </div>
 
-    <div class="container">
-        <header>
-            <div class="header-left">
-                <h1>AI 学习教练</h1>
-            </div>
-            <div class="header-right">
-                <div id="userInfo" class="user-info" style="display: none;">
-                    <img id="userAvatar" src="" alt="Avatar" class="user-avatar">
-                    <span id="userName">User</span>
-                    <button id="logoutBtn" class="icon-btn" title="退出登录">🚪</button>
-                </div>
-                <button class="icon-btn" id="aiConfigBtn" title="AI 设置">⚙️</button>
-                <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">≡</button>
-            </div>
-        </header>
+    <!-- Toast 通知 -->
+    <div class="toast-container" id="toastContainer"></div>
 
-        <!-- Stats Section -->
-
-        <!-- Toast 通知 -->
-        <div class="toast-container" id="toastContainer"></div>
-
-        <script src="app.js?v=2.0.3"></script>
+    <script src="app.js?v=2.1.0"></script>
 </body>
 
 </html>
