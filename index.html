@@ -105,6 +105,7 @@
                     <button class="modal-tab active" data-tab="config">🔧 配置</button>
                     <button class="modal-tab" data-tab="logs">📋 日志 <span class="log-count"
                             id="logCount">0</span></button>
+                    <button class="modal-tab" data-tab="feishu">🔄 飞书同步</button>
                 </div>
 
                 <!-- 配置 Tab -->
@@ -192,6 +193,65 @@
                     <div class="modal-footer">
                         <div class="modal-footer-right">
                             <button class="btn btn-ghost" id="closeLogsBtn">关闭</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 飞书同步 Tab -->
+                <div class="modal-tab-content" id="tabFeishu">
+                    <div class="modal-body">
+                        <div class="feishu-section">
+                            <h3 class="feishu-section-title">📋 飞书应用凭证</h3>
+                            <p class="config-hint">在 <a href="https://open.feishu.cn" target="_blank">飞书开放平台</a>
+                                创建应用获取以下信息</p>
+                            <div class="config-group">
+                                <label class="config-label">App ID</label>
+                                <input type="text" class="config-input" id="feishuAppId" placeholder="cli_xxxxx">
+                            </div>
+                            <div class="config-group">
+                                <label class="config-label">App Secret</label>
+                                <div class="config-input-group">
+                                    <input type="password" class="config-input" id="feishuAppSecret"
+                                        placeholder="输入应用密钥">
+                                    <button class="btn btn-sm btn-ghost toggle-password"
+                                        id="toggleFeishuSecretBtn">👁️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="config-divider">
+
+                        <div class="feishu-section">
+                            <h3 class="feishu-section-title">📊 多维表格配置</h3>
+                            <p class="config-hint">打开你的飞书多维表格，从 URL 中复制
+                                app_token（格式如：https://xxx.feishu.cn/base/<strong>appToken</strong>）</p>
+                            <div class="config-group">
+                                <label class="config-label">多维表格 App Token</label>
+                                <input type="text" class="config-input" id="feishuAppToken" placeholder="bascnXXXXXXXX">
+                            </div>
+                        </div>
+
+                        <hr class="config-divider">
+
+                        <div class="feishu-section">
+                            <h3 class="feishu-section-title">🔄 数据同步</h3>
+                            <div id="feishuSyncStatus" class="feishu-sync-status">
+                                <span class="sync-dot sync-dot-idle"></span>
+                                <span id="feishuStatusText">未配置</span>
+                            </div>
+                            <div class="feishu-sync-actions">
+                                <button class="btn btn-ghost" id="feishuTestBtn">🧪 测试连接</button>
+                                <button class="btn btn-ghost" id="feishuInitBtn" disabled>📋 初始化表格</button>
+                                <button class="btn btn-primary" id="feishuUploadBtn" disabled>⬆️ 上传到飞书</button>
+                                <button class="btn btn-ghost" id="feishuDownloadBtn" disabled>⬇️ 从飞书下载</button>
+                            </div>
+                            <div id="feishuSyncLog" class="feishu-sync-log"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="modal-footer-right">
+                            <button class="btn btn-ghost" id="feishuSaveBtn">💾 保存配置</button>
+                            <button class="btn btn-ghost" id="closeFeishuBtn">关闭</button>
                         </div>
                     </div>
                 </div>

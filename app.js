@@ -653,11 +653,16 @@ function initAIConfig() {
             tab.classList.add('active');
             // 切换内容
             document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
-            const targetId = tab.dataset.tab === 'config' ? 'tabConfig' : 'tabLogs';
-            document.getElementById(targetId).classList.add('active');
+            const tabMap = { config: 'tabConfig', logs: 'tabLogs', feishu: 'tabFeishu' };
+            const targetId = tabMap[tab.dataset.tab] || 'tabConfig';
+            document.getElementById(targetId)?.classList.add('active');
             // 切换到日志 tab 时刷新日志
             if (tab.dataset.tab === 'logs') {
                 renderLogList();
+            }
+            // 切换到飞书 tab 时加载配置
+            if (tab.dataset.tab === 'feishu') {
+                FeishuSync.loadConfigToUI();
             }
         });
     });
@@ -2176,3 +2181,503 @@ function handleCrudDelete(type, id) {
         updateStats(); // 同时更新统计数据
     });
 }
+
+
+// ===== 飞书多维表格同步模块 =====
+const FeishuSync = {
+    CONFIG_KEY: 'learnflow_feishu_config',
+
+    // 数据表定义
+    TABLE_DEFS: {
+        topics: {
+            name: 'LearnFlow_主题',
+            fields: [
+                { name: 'id', type: 1 },
+                { name: 'title', type: 1 },
+                { name: 'content', type: 1 },
+                { name: 'createdAt', type: 1 }
+            ]
+        },
+        knowledgePoints: {
+            name: 'LearnFlow_知识点',
+            fields: [
+                { name: 'id', type: 1 },
+                { name: 'topicId', type: 1 },
+                { name: 'title', type: 1 },
+                { name: 'description', type: 1 },
+                { name: 'mastery', type: 2 },
+                { name: 'nextReview', type: 1 },
+                { name: 'reviewCount', type: 2 },
+                { name: 'lastReview', type: 1 },
+                { name: 'createdAt', type: 1 }
+            ]
+        },
+        practices: {
+            name: 'LearnFlow_练习',
+            fields: [
+                { name: 'id', type: 1 },
+                { name: 'kpId', type: 1 },
+                { name: 'topicId', type: 1 },
+                { name: 'question', type: 1 },
+                { name: 'answer', type: 1 },
+                { name: 'score', type: 2 },
+                { name: 'feedback', type: 1 },
+                { name: 'createdAt', type: 1 }
+            ]
+        },
+        userState: {
+            name: 'LearnFlow_用户状态',
+            fields: [
+                { name: 'key', type: 1 },
+                { name: 'value', type: 1 }
+            ]
+        }
+    },
+
+    // 获取配置
+    getConfig() {
+        try {
+            return JSON.parse(localStorage.getItem(this.CONFIG_KEY)) || {};
+        } catch { return {}; }
+    },
+
+    // 保存配置
+    saveConfig(config) {
+        localStorage.setItem(this.CONFIG_KEY, JSON.stringify(config));
+    },
+
+    // 判断是否已配置
+    isConfigured() {
+        const c = this.getConfig();
+        return !!(c.appId && c.appSecret && c.appToken);
+    },
+
+    // 获取 API 基础 URL（生产环境用相对路径，本地开发用完整 URL）
+    getApiUrl() {
+        if (location.protocol === 'file:') {
+            // 本地文件打开时，需要指向 Vercel 部署的 API
+            const config = this.getConfig();
+            return config.vercelUrl || 'https://ai-learning-coach-sigma.vercel.app';
+        }
+        return '';  // 生产环境用相对路径
+    },
+
+    // 调用飞书 API 代理
+    async callApi(action, extra = {}) {
+        const config = this.getConfig();
+        const apiUrl = this.getApiUrl();
+
+        const resp = await fetch(`${apiUrl}/api/feishu`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action,
+                appId: config.appId,
+                appSecret: config.appSecret,
+                appToken: config.appToken,
+                ...extra
+            })
+        });
+
+        const result = await resp.json();
+        if (!resp.ok || result.error) {
+            throw new Error(result.error || `HTTP ${resp.status}`);
+        }
+        return result;
+    },
+
+    // 日志输出
+    log(msg, type = 'info') {
+        const logEl = document.getElementById('feishuSyncLog');
+        if (!logEl) return;
+        const line = document.createElement('div');
+        line.className = `log-line log-${type}`;
+        const time = new Date().toLocaleTimeString();
+        line.textContent = `[${time}] ${msg}`;
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+    },
+
+    // 清空日志
+    clearLog() {
+        const logEl = document.getElementById('feishuSyncLog');
+        if (logEl) logEl.innerHTML = '';
+    },
+
+    // 更新状态显示
+    setStatus(text, state = 'idle') {
+        const dot = document.querySelector('#feishuSyncStatus .sync-dot');
+        const textEl = document.getElementById('feishuStatusText');
+        if (dot) {
+            dot.className = `sync-dot sync-dot-${state}`;
+        }
+        if (textEl) textEl.textContent = text;
+    },
+
+    // 启用/禁用按钮
+    setButtonsEnabled(enabled) {
+        const ids = ['feishuInitBtn', 'feishuUploadBtn', 'feishuDownloadBtn'];
+        ids.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.disabled = !enabled;
+        });
+    },
+
+    // ===== 测试连接 =====
+    async testConnection() {
+        this.clearLog();
+        this.setStatus('正在连接...', 'loading');
+        this.log('开始测试飞书连接...');
+
+        try {
+            const result = await this.callApi('testConnection');
+            this.log(`✅ 连接成功！多维表格中有 ${result.tableCount} 张数据表`, 'success');
+            this.setStatus('已连接', 'success');
+            this.setButtonsEnabled(true);
+            showToast('飞书连接成功！', 'success');
+        } catch (err) {
+            this.log(`❌ 连接失败: ${err.message}`, 'error');
+            this.setStatus('连接失败', 'error');
+            this.setButtonsEnabled(false);
+            showToast('飞书连接失败: ' + err.message, 'error');
+        }
+    },
+
+    // ===== 初始化数据表 =====
+    async initTables() {
+        this.clearLog();
+        this.setStatus('正在初始化表格...', 'loading');
+        this.log('开始创建数据表...');
+
+        try {
+            // 先获取已有表格
+            const existing = await this.callApi('listTables');
+            const existingNames = (existing.tables || []).map(t => t.name);
+
+            const config = this.getConfig();
+            config.tableIds = config.tableIds || {};
+
+            // 对已存在的表格，记录其 table_id
+            for (const [key, def] of Object.entries(this.TABLE_DEFS)) {
+                const found = (existing.tables || []).find(t => t.name === def.name);
+                if (found) {
+                    config.tableIds[key] = found.table_id;
+                    this.log(`📋 表 "${def.name}" 已存在 (${found.table_id})`);
+                }
+            }
+
+            // 创建不存在的表格
+            for (const [key, def] of Object.entries(this.TABLE_DEFS)) {
+                if (existingNames.includes(def.name)) continue;
+
+                this.log(`📋 创建表 "${def.name}"...`);
+                const result = await this.callApi('createTable', {
+                    data: { name: def.name, fields: def.fields }
+                });
+                config.tableIds[key] = result.tableId;
+                this.log(`✅ 表 "${def.name}" 创建成功 (${result.tableId})`, 'success');
+            }
+
+            this.saveConfig(config);
+            this.setStatus('表格已就绪', 'success');
+            this.log('🎉 所有数据表初始化完成！', 'success');
+            showToast('飞书数据表初始化完成！', 'success');
+        } catch (err) {
+            this.log(`❌ 初始化失败: ${err.message}`, 'error');
+            this.setStatus('初始化失败', 'error');
+            showToast('初始化失败: ' + err.message, 'error');
+        }
+    },
+
+    // ===== 上传数据到飞书 =====
+    async uploadData() {
+        this.clearLog();
+        this.setStatus('正在上传...', 'loading');
+        this.log('开始上传数据到飞书...');
+
+        const config = this.getConfig();
+        if (!config.tableIds) {
+            this.log('❌ 请先初始化数据表', 'error');
+            this.setStatus('未初始化', 'error');
+            showToast('请先点击"初始化表格"按钮', 'error');
+            return;
+        }
+
+        try {
+            const data = DB.getAll();
+
+            // 1. 清空飞书表中的旧数据
+            this.log('🗑️ 清空飞书旧数据...');
+            for (const [key, tableId] of Object.entries(config.tableIds)) {
+                await this.callApi('deleteAllRecords', { tableId });
+                this.log(`  清空表 ${this.TABLE_DEFS[key]?.name || key}`);
+            }
+
+            // 2. 上传主题
+            if (data.topics.length > 0) {
+                this.log(`⬆️ 上传 ${data.topics.length} 个主题...`);
+                const topicRecords = data.topics.map(t => ({
+                    id: t.id, title: t.title,
+                    content: t.content, createdAt: t.createdAt
+                }));
+                await this.callApi('batchCreate', {
+                    tableId: config.tableIds.topics,
+                    data: { records: topicRecords }
+                });
+                this.log(`✅ 主题上传完成`, 'success');
+            }
+
+            // 3. 上传知识点
+            if (data.knowledgePoints.length > 0) {
+                this.log(`⬆️ 上传 ${data.knowledgePoints.length} 个知识点...`);
+                const kpRecords = data.knowledgePoints.map(kp => ({
+                    id: kp.id, topicId: kp.topicId, title: kp.title,
+                    description: kp.description, mastery: kp.mastery || 0,
+                    nextReview: kp.nextReview || '', reviewCount: kp.reviewCount || 0,
+                    lastReview: kp.lastReview || '', createdAt: kp.createdAt
+                }));
+                await this.callApi('batchCreate', {
+                    tableId: config.tableIds.knowledgePoints,
+                    data: { records: kpRecords }
+                });
+                this.log(`✅ 知识点上传完成`, 'success');
+            }
+
+            // 4. 上传练习记录
+            if (data.practices.length > 0) {
+                this.log(`⬆️ 上传 ${data.practices.length} 条练习记录...`);
+                const practiceRecords = data.practices.map(p => ({
+                    id: p.id, kpId: p.kpId, topicId: p.topicId,
+                    question: p.question, answer: p.answer || '',
+                    score: p.score || 0, feedback: p.feedback || '',
+                    createdAt: p.createdAt
+                }));
+                await this.callApi('batchCreate', {
+                    tableId: config.tableIds.practices,
+                    data: { records: practiceRecords }
+                });
+                this.log(`✅ 练习记录上传完成`, 'success');
+            }
+
+            // 5. 上传用户状态
+            this.log('⬆️ 上传用户状态...');
+            const stateRecords = [
+                { key: 'streak', value: String(data.streak || 0) },
+                { key: 'lastStudyDate', value: data.lastStudyDate || '' },
+                { key: 'dailyLog', value: JSON.stringify(data.dailyLog || {}) }
+            ];
+            await this.callApi('batchCreate', {
+                tableId: config.tableIds.userState,
+                data: { records: stateRecords }
+            });
+            this.log(`✅ 用户状态上传完成`, 'success');
+
+            this.setStatus('上传完成', 'success');
+            this.log(`🎉 数据上传成功！共 ${data.topics.length} 主题, ${data.knowledgePoints.length} 知识点, ${data.practices.length} 练习`, 'success');
+            showToast('数据已上传到飞书！', 'success');
+        } catch (err) {
+            this.log(`❌ 上传失败: ${err.message}`, 'error');
+            this.setStatus('上传失败', 'error');
+            showToast('上传失败: ' + err.message, 'error');
+        }
+    },
+
+    // ===== 从飞书下载数据 =====
+    async downloadData() {
+        this.clearLog();
+        this.setStatus('正在下载...', 'loading');
+        this.log('开始从飞书下载数据...');
+
+        const config = this.getConfig();
+        if (!config.tableIds) {
+            this.log('❌ 请先初始化数据表', 'error');
+            this.setStatus('未初始化', 'error');
+            showToast('请先点击"初始化表格"按钮', 'error');
+            return;
+        }
+
+        try {
+            const newData = DB._defaultData();
+
+            // 1. 下载主题
+            this.log('⬇️ 下载主题...');
+            const topicsResult = await this.callApi('listRecords', {
+                tableId: config.tableIds.topics
+            });
+            newData.topics = (topicsResult.records || []).map(r => ({
+                id: r.fields.id, title: r.fields.title,
+                content: r.fields.content, createdAt: r.fields.createdAt
+            })).filter(t => t.id && t.title);
+            this.log(`  获取到 ${newData.topics.length} 个主题`);
+
+            // 2. 下载知识点
+            this.log('⬇️ 下载知识点...');
+            const kpResult = await this.callApi('listRecords', {
+                tableId: config.tableIds.knowledgePoints
+            });
+            newData.knowledgePoints = (kpResult.records || []).map(r => ({
+                id: r.fields.id, topicId: r.fields.topicId,
+                title: r.fields.title, description: r.fields.description,
+                mastery: Number(r.fields.mastery) || 0,
+                nextReview: r.fields.nextReview || null,
+                reviewCount: Number(r.fields.reviewCount) || 0,
+                lastReview: r.fields.lastReview || null,
+                createdAt: r.fields.createdAt
+            })).filter(kp => kp.id && kp.title);
+            this.log(`  获取到 ${newData.knowledgePoints.length} 个知识点`);
+
+            // 3. 下载练习记录
+            this.log('⬇️ 下载练习记录...');
+            const practicesResult = await this.callApi('listRecords', {
+                tableId: config.tableIds.practices
+            });
+            newData.practices = (practicesResult.records || []).map(r => ({
+                id: r.fields.id, kpId: r.fields.kpId,
+                topicId: r.fields.topicId,
+                question: r.fields.question, answer: r.fields.answer || '',
+                score: Number(r.fields.score) || 0,
+                feedback: r.fields.feedback || '',
+                createdAt: r.fields.createdAt
+            })).filter(p => p.id);
+            this.log(`  获取到 ${newData.practices.length} 条练习`);
+
+            // 4. 下载用户状态
+            this.log('⬇️ 下载用户状态...');
+            const stateResult = await this.callApi('listRecords', {
+                tableId: config.tableIds.userState
+            });
+            for (const r of (stateResult.records || [])) {
+                const key = r.fields.key;
+                const value = r.fields.value;
+                if (key === 'streak') newData.streak = Number(value) || 0;
+                else if (key === 'lastStudyDate') newData.lastStudyDate = value || null;
+                else if (key === 'dailyLog') {
+                    try { newData.dailyLog = JSON.parse(value); } catch { newData.dailyLog = {}; }
+                }
+            }
+            this.log(`  用户状态已恢复`);
+
+            // 5. 保存到 localStorage
+            DB.saveAll(newData);
+
+            // 6. 刷新界面
+            updateStats();
+            renderKnowledgeGraph();
+            renderPracticePage();
+            renderDashboard();
+
+            this.setStatus('下载完成', 'success');
+            this.log(`🎉 下载成功！共 ${newData.topics.length} 主题, ${newData.knowledgePoints.length} 知识点, ${newData.practices.length} 练习`, 'success');
+            showToast('数据已从飞书下载！', 'success');
+        } catch (err) {
+            this.log(`❌ 下载失败: ${err.message}`, 'error');
+            this.setStatus('下载失败', 'error');
+            showToast('下载失败: ' + err.message, 'error');
+        }
+    },
+
+    // UI 初始化：加载配置到表单
+    loadConfigToUI() {
+        const config = this.getConfig();
+        const appId = document.getElementById('feishuAppId');
+        const appSecret = document.getElementById('feishuAppSecret');
+        const appToken = document.getElementById('feishuAppToken');
+        if (appId) appId.value = config.appId || '';
+        if (appSecret) appSecret.value = config.appSecret || '';
+        if (appToken) appToken.value = config.appToken || '';
+
+        // 更新状态
+        if (this.isConfigured()) {
+            this.setStatus('已配置（点击测试连接）', 'idle');
+        } else {
+            this.setStatus('未配置', 'idle');
+        }
+    },
+
+    // UI：保存表单到配置
+    saveConfigFromUI() {
+        const config = this.getConfig();
+        config.appId = document.getElementById('feishuAppId')?.value.trim() || '';
+        config.appSecret = document.getElementById('feishuAppSecret')?.value.trim() || '';
+        config.appToken = document.getElementById('feishuAppToken')?.value.trim() || '';
+        this.saveConfig(config);
+        showToast('飞书配置已保存', 'success');
+
+        if (this.isConfigured()) {
+            this.setStatus('已配置（点击测试连接）', 'idle');
+        }
+    }
+};
+
+
+// ===== 飞书同步事件绑定 =====
+function initFeishuEvents() {
+    // 密钥显示/隐藏
+    const toggleBtn = document.getElementById('toggleFeishuSecretBtn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const input = document.getElementById('feishuAppSecret');
+            if (input) {
+                input.type = input.type === 'password' ? 'text' : 'password';
+            }
+        });
+    }
+
+    // 保存配置
+    const saveBtn = document.getElementById('feishuSaveBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => FeishuSync.saveConfigFromUI());
+    }
+
+    // 关闭按钮
+    const closeBtn = document.getElementById('closeFeishuBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            document.getElementById('aiConfigModal')?.classList.remove('active');
+        });
+    }
+
+    // 测试连接
+    const testBtn = document.getElementById('feishuTestBtn');
+    if (testBtn) {
+        testBtn.addEventListener('click', () => {
+            FeishuSync.saveConfigFromUI();
+            FeishuSync.testConnection();
+        });
+    }
+
+    // 初始化表格
+    const initBtn = document.getElementById('feishuInitBtn');
+    if (initBtn) {
+        initBtn.addEventListener('click', () => FeishuSync.initTables());
+    }
+
+    // 上传数据
+    const uploadBtn = document.getElementById('feishuUploadBtn');
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', () => {
+            showConfirm('确定要上传数据到飞书吗？\n这将覆盖飞书中的现有数据。', () => {
+                FeishuSync.uploadData();
+            });
+        });
+    }
+
+    // 下载数据
+    const downloadBtn = document.getElementById('feishuDownloadBtn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            showConfirm('确定要从飞书下载数据吗？\n这将覆盖本地浏览器中的数据。', () => {
+                FeishuSync.downloadData();
+            });
+        });
+    }
+
+    // 加载配置到表单
+    FeishuSync.loadConfigToUI();
+}
+
+// 在页面初始化时绑定飞书事件
+document.addEventListener('DOMContentLoaded', () => {
+    // 延迟初始化飞书模块（确保其他模块已加载）
+    setTimeout(initFeishuEvents, 100);
+});

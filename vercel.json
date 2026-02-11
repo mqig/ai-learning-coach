@@ -19,7 +19,7 @@
       ]
     },
     {
-      "source": "/(.*).js",
+      "source": "/(?!api)(.*).js",
       "headers": [
         {
           "key": "Cache-Control",
