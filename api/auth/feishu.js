@@ -13,9 +13,9 @@ export default async function handler(req, res) {
         return;
     }
 
-    const { code } = req.body;
-    if (!code) {
-        res.status(400).json({ error: 'Missing code' });
+    const { code, grant_type, refresh_token } = req.body;
+    if (!code && !refresh_token) {
+        res.status(400).json({ error: 'Missing code or refresh_token' });
         return;
     }
 
@@ -27,34 +27,24 @@ export default async function handler(req, res) {
             throw new Error('Server misconfiguration: Missing App ID or Secret');
         }
 
-        // 1. 获取 user_access_token
-        const tokenRes = await fetch('https://open.feishu.cn/open-apis/authen/v1/oidc/access_token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${await getAppAccessToken(APP_ID, APP_SECRET)}` // 需要 app_access_token? NO, OIDC uses app_id/secret directly or app_access_token?
-                // Feishu OIDC /authen/v1/oidc/access_token requires app_access_token usually, OR app_id/secret in body?
-                // Let's check docs. Standard OAuth: POST /authen/v1/access_token
-                // Body: { grant_type: 'authorization_code', code: code }
-                // Headers: Authorization: Bearer <app_access_token>
-            }
-        });
-
-        // Wait, let's use the standard "Login" API (v1/access_token).
-        // URL: https://open.feishu.cn/open-apis/authen/v1/access_token
-
         const appAccessToken = await getAppAccessToken(APP_ID, APP_SECRET);
 
-        const response = await fetch('https://open.feishu.cn/open-apis/authen/v1/access_token', {
+        // API Endpoint: Determine based on grant_type
+        const endpoint = grant_type === 'refresh_token'
+            ? 'https://open.feishu.cn/open-apis/authen/v1/refresh_access_token'
+            : 'https://open.feishu.cn/open-apis/authen/v1/access_token';
+
+        const body = grant_type === 'refresh_token'
+            ? { grant_type: 'refresh_token', refresh_token }
+            : { grant_type: 'authorization_code', code };
+
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json; charset=utf-8',
                 'Authorization': `Bearer ${appAccessToken}`
             },
-            body: JSON.stringify({
-                grant_type: 'authorization_code',
-                code: code
-            })
+            body: JSON.stringify(body)
         });
 
         const data = await response.json();
@@ -62,7 +52,7 @@ export default async function handler(req, res) {
             throw new Error(`Feishu API Error: ${data.msg}`);
         }
 
-        // data.data contains: access_token, refresh_token, open_id, etc.
+        // data.data contains: access_token, refresh_token, open_id (only in login), expires_in
         res.status(200).json(data.data);
 
     } catch (error) {

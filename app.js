@@ -2315,23 +2315,68 @@ const FeishuAuth = {
         window.location.reload();
     },
 
-    // 获取当前 Token
-    getToken() {
-        const token = localStorage.getItem(this.TOKEN_KEY);
-        // TODO: Check expiration (simplified for MVP)
+    // Token Expiry Key
+    EXPIRE_KEY: 'feishu_token_expire',
+    REFRESH_TOKEN_KEY: 'feishu_refresh_token',
+
+    // 获取当前 Token (自动刷新)
+    async getToken() {
+        let token = localStorage.getItem(this.TOKEN_KEY);
+        if (!token) return null;
+
+        // 检查是否过期 (提前 5 分钟刷新)
+        const expireTime = parseInt(localStorage.getItem(this.EXPIRE_KEY) || '0');
+        const now = Date.now();
+
+        if (expireTime > 0 && now > expireTime - 300000) { // 5 minutes buffer
+            console.log('Token expiring, refreshing...');
+            token = await this.refreshToken();
+        }
         return token;
     },
 
-    // 获取用户信息
-    getUser() {
+    // 刷新 Token
+    async refreshToken() {
+        const refreshToken = localStorage.getItem(this.REFRESH_TOKEN_KEY);
+        if (!refreshToken) return null;
+
         try {
-            return JSON.parse(localStorage.getItem(this.USER_INFO_KEY));
-        } catch { return null; }
+            const res = await fetch(getApiBaseUrl() + '/api/auth/feishu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    grant_type: 'refresh_token',
+                    refresh_token: refreshToken
+                })
+            });
+            const data = await res.json();
+            if (data.access_token) {
+                this.setToken(data.access_token, data.expires_in, data.refresh_token);
+                console.log('Token refreshed successfully');
+                return data.access_token;
+            }
+        } catch (e) {
+            console.error('Failed to refresh token:', e);
+            // 如果刷新失败且已彻底过期，需要重新登录
+            const expireTime = parseInt(localStorage.getItem(this.EXPIRE_KEY) || '0');
+            if (Date.now() > expireTime) {
+                this.logout(); // Force logout
+                return null;
+            }
+        }
+        // 如果刷新失败但旧 token 还能撑着用，暂时返回旧 token
+        return localStorage.getItem(this.TOKEN_KEY);
     },
 
     setToken(token, expiresIn, refreshToken) {
         localStorage.setItem(this.TOKEN_KEY, token);
-        // Store expiry time if needed
+        if (expiresIn) {
+            // expiresIn is seconds (e.g. 7200)
+            localStorage.setItem(this.EXPIRE_KEY, (Date.now() + expiresIn * 1000).toString());
+        }
+        if (refreshToken) {
+            localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+        }
     },
 
     setUserInfo(user) {
@@ -2339,7 +2384,7 @@ const FeishuAuth = {
     },
 
     isLoggedIn() {
-        return !!this.getToken();
+        return !!localStorage.getItem(this.TOKEN_KEY);
     }
 };
 
