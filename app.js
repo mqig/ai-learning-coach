@@ -28,6 +28,11 @@ const DB = {
     // 保存全部数据
     saveAll(data) {
         localStorage.setItem(this.KEY, JSON.stringify(data));
+
+        // 尝试触发飞书自动同步
+        if (typeof FeishuSync !== 'undefined') {
+            FeishuSync.scheduleAutoSync();
+        }
     },
 
     // 默认数据结构
@@ -2389,17 +2394,40 @@ const FeishuSync = {
         }
     },
 
+    // 自动同步定时器
+    timer: null,
+
+    // 调度自动同步（防抖）
+    scheduleAutoSync() {
+        const config = this.getConfig();
+        if (!config.autoSync) return;
+
+        // 如果未初始化表格，跳过
+        if (!config.tableIds) return;
+
+        if (this.timer) clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+            this.uploadData({ silent: true });
+        }, 5000); // 5秒后自动同步
+    },
+
     // ===== 上传数据到飞书 =====
-    async uploadData() {
-        this.clearLog();
-        this.setStatus('正在上传...', 'loading');
-        this.log('开始上传数据到飞书...');
+    async uploadData(options = { silent: false }) {
+        if (!options.silent) {
+            this.clearLog();
+            this.setStatus('正在上传...', 'loading');
+            this.log('开始上传数据到飞书...');
+        } else {
+            this.setStatus('正在自动同步...', 'loading');
+        }
 
         const config = this.getConfig();
         if (!config.tableIds) {
-            this.log('❌ 请先初始化数据表', 'error');
-            this.setStatus('未初始化', 'error');
-            showToast('请先点击"初始化表格"按钮', 'error');
+            if (!options.silent) {
+                this.log('❌ 请先初始化数据表', 'error');
+                this.setStatus('未初始化', 'error');
+                showToast('请先点击"初始化表格"按钮', 'error');
+            }
             return;
         }
 
@@ -2407,7 +2435,7 @@ const FeishuSync = {
             const data = DB.getAll();
 
             // 1. 清空飞书表中的旧数据
-            this.log('🗑️ 清空飞书旧数据...');
+            if (!options.silent) this.log('🗑️ 清空飞书旧数据...');
             for (const [key, tableId] of Object.entries(config.tableIds)) {
                 await this.callApi('deleteAllRecords', { tableId });
                 this.log(`  清空表 ${this.TABLE_DEFS[key]?.name || key}`);
@@ -2415,7 +2443,7 @@ const FeishuSync = {
 
             // 2. 上传主题
             if (data.topics.length > 0) {
-                this.log(`⬆️ 上传 ${data.topics.length} 个主题...`);
+                if (!options.silent) this.log(`⬆️ 上传 ${data.topics.length} 个主题...`);
                 const topicRecords = data.topics.map(t => ({
                     id: t.id, title: t.title,
                     content: t.content, createdAt: t.createdAt
@@ -2424,12 +2452,12 @@ const FeishuSync = {
                     tableId: config.tableIds.topics,
                     data: { records: topicRecords }
                 });
-                this.log(`✅ 主题上传完成`, 'success');
+                if (!options.silent) this.log(`✅ 主题上传完成`, 'success');
             }
 
             // 3. 上传知识点
             if (data.knowledgePoints.length > 0) {
-                this.log(`⬆️ 上传 ${data.knowledgePoints.length} 个知识点...`);
+                if (!options.silent) this.log(`⬆️ 上传 ${data.knowledgePoints.length} 个知识点...`);
                 const kpRecords = data.knowledgePoints.map(kp => ({
                     id: kp.id, topicId: kp.topicId, title: kp.title,
                     description: kp.description, mastery: kp.mastery || 0,
@@ -2440,12 +2468,12 @@ const FeishuSync = {
                     tableId: config.tableIds.knowledgePoints,
                     data: { records: kpRecords }
                 });
-                this.log(`✅ 知识点上传完成`, 'success');
+                if (!options.silent) this.log(`✅ 知识点上传完成`, 'success');
             }
 
             // 4. 上传练习记录
             if (data.practices.length > 0) {
-                this.log(`⬆️ 上传 ${data.practices.length} 条练习记录...`);
+                if (!options.silent) this.log(`⬆️ 上传 ${data.practices.length} 条练习记录...`);
                 const practiceRecords = data.practices.map(p => ({
                     id: p.id, kpId: p.kpId, topicId: p.topicId,
                     question: p.question, answer: p.answer || '',
@@ -2456,11 +2484,11 @@ const FeishuSync = {
                     tableId: config.tableIds.practices,
                     data: { records: practiceRecords }
                 });
-                this.log(`✅ 练习记录上传完成`, 'success');
+                if (!options.silent) this.log(`✅ 练习记录上传完成`, 'success');
             }
 
             // 5. 上传用户状态
-            this.log('⬆️ 上传用户状态...');
+            if (!options.silent) this.log('⬆️ 上传用户状态...');
             const stateRecords = [
                 { key: 'streak', value: String(data.streak || 0) },
                 { key: 'lastStudyDate', value: data.lastStudyDate || '' },
@@ -2470,15 +2498,32 @@ const FeishuSync = {
                 tableId: config.tableIds.userState,
                 data: { records: stateRecords }
             });
-            this.log(`✅ 用户状态上传完成`, 'success');
+            if (!options.silent) this.log(`✅ 用户状态上传完成`, 'success');
 
             this.setStatus('上传完成', 'success');
-            this.log(`🎉 数据上传成功！共 ${data.topics.length} 主题, ${data.knowledgePoints.length} 知识点, ${data.practices.length} 练习`, 'success');
-            showToast('数据已上传到飞书！', 'success');
+            if (!options.silent) {
+                this.log(`🎉 数据上传成功！共 ${data.topics.length} 主题, ${data.knowledgePoints.length} 知识点, ${data.practices.length} 练习`, 'success');
+                showToast('数据已上传到飞书！', 'success');
+            } else {
+                const time = new Date().toLocaleTimeString();
+                const logEl = document.getElementById('feishuSyncLog');
+                if (logEl) {
+                    const line = document.createElement('div');
+                    line.className = 'log-line log-success';
+                    line.textContent = `[${time}] 🔄 自动同步成功`;
+                    logEl.appendChild(line);
+                    logEl.scrollTop = logEl.scrollHeight;
+                }
+            }
         } catch (err) {
-            this.log(`❌ 上传失败: ${err.message}`, 'error');
+            if (!options.silent) {
+                this.log(`❌ 上传失败: ${err.message}`, 'error');
+                showToast('上传失败: ' + err.message, 'error');
+            } else {
+                console.error('自动同步失败:', err);
+                // Keep silent
+            }
             this.setStatus('上传失败', 'error');
-            showToast('上传失败: ' + err.message, 'error');
         }
     },
 
@@ -2562,9 +2607,9 @@ const FeishuSync = {
 
             // 6. 刷新界面
             updateStats();
-            renderKnowledgeGraph();
-            renderPracticePage();
             renderDashboard();
+            renderKnowledgeGraph();
+            renderReviewPage();
 
             this.setStatus('下载完成', 'success');
             this.log(`🎉 下载成功！共 ${newData.topics.length} 主题, ${newData.knowledgePoints.length} 知识点, ${newData.practices.length} 练习`, 'success');
@@ -2582,9 +2627,12 @@ const FeishuSync = {
         const appId = document.getElementById('feishuAppId');
         const appSecret = document.getElementById('feishuAppSecret');
         const appToken = document.getElementById('feishuAppToken');
+        const autoSync = document.getElementById('feishuAutoSync');
+
         if (appId) appId.value = config.appId || '';
         if (appSecret) appSecret.value = config.appSecret || '';
         if (appToken) appToken.value = config.appToken || '';
+        if (autoSync) autoSync.checked = !!config.autoSync;
 
         // 更新状态
         if (this.isConfigured()) {
@@ -2600,6 +2648,7 @@ const FeishuSync = {
         config.appId = document.getElementById('feishuAppId')?.value.trim() || '';
         config.appSecret = document.getElementById('feishuAppSecret')?.value.trim() || '';
         config.appToken = document.getElementById('feishuAppToken')?.value.trim() || '';
+        config.autoSync = document.getElementById('feishuAutoSync')?.checked || false;
         this.saveConfig(config);
         showToast('飞书配置已保存', 'success');
 
@@ -2674,6 +2723,17 @@ function initFeishuEvents() {
 
     // 加载配置到表单
     FeishuSync.loadConfigToUI();
+
+    // 监听自动同步开关
+    const autoSync = document.getElementById('feishuAutoSync');
+    if (autoSync) {
+        autoSync.addEventListener('change', () => {
+            FeishuSync.saveConfigFromUI();
+            if (autoSync.checked) {
+                showToast('已开启自动同步 (5秒后自动备份)', 'info');
+            }
+        });
+    }
 }
 
 // 在页面初始化时绑定飞书事件

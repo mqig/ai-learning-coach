@@ -10,7 +10,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.0.1">
+    <link rel="stylesheet" href="style.css?v=2.0.3">
 </head>
 
 <body>
@@ -235,9 +235,15 @@
 
                         <div class="feishu-section">
                             <h3 class="feishu-section-title">🔄 数据同步</h3>
-                            <div id="feishuSyncStatus" class="feishu-sync-status">
-                                <span class="sync-dot sync-dot-idle"></span>
-                                <span id="feishuStatusText">未配置</span>
+                            <div class="feishu-status-row">
+                                <div id="feishuSyncStatus" class="feishu-sync-status">
+                                    <span class="sync-dot sync-dot-idle"></span>
+                                    <span id="feishuStatusText">未配置</span>
+                                </div>
+                                <label class="auto-sync-switch" title="开启后，本地修改将在 5 秒后自动同步到飞书">
+                                    <input type="checkbox" id="feishuAutoSync">
+                                    <span>自动同步</span>
+                                </label>
                             </div>
                             <div class="feishu-sync-actions">
                                 <button class="btn btn-ghost" id="feishuTestBtn">🧪 测试连接</button>
@@ -538,7 +544,7 @@
     <!-- Toast 通知 -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="app.js?v=2.0.1"></script>
+    <script src="app.js?v=2.0.3"></script>
 </body>
 
 </html>

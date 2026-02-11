@@ -2370,3 +2370,33 @@ body:has(.sidebar.collapsed) .sidebar-expand-btn {
 .feishu-sync-log .log-line.log-info {
     color: var(--accent-blue);
 }
+/* 飞书自动同步开关 */
+.feishu-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.feishu-sync-status {
+    flex-grow: 1;
+    margin-bottom: 0 !important; /* Override */
+}
+
+.auto-sync-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.auto-sync-switch input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--accent-blue);
+    cursor: pointer;
+}
