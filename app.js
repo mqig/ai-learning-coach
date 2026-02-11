@@ -557,9 +557,10 @@ function initAIConfig() {
     const closeModal = () => modal.classList.remove('active');
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
+    // 移除点击背景关闭逻辑，防止误触
+    // modal.addEventListener('click', (e) => {
+    //     if (e.target === modal) closeModal();
+    // });
 
     // ESC 关闭
     document.addEventListener('keydown', (e) => {
@@ -2202,7 +2203,8 @@ function initConfirmModal() {
 
     closeBtn.onclick = closeModal;
     cancelBtn.onclick = closeModal;
-    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+    // 移除点击背景关闭，防止误触
+    // modal.onclick = (e) => { if (e.target === modal) closeModal(); };
 
     okBtn.onclick = () => {
         if (confirmCallback) confirmCallback();
@@ -2210,9 +2212,20 @@ function initConfirmModal() {
     };
 }
 
-function showConfirm(message, callback) {
+function showConfirm(message, callback, okText = '确定', isDanger = false) {
     const modal = document.getElementById('confirmModal');
+    const okBtn = document.getElementById('confirmOkBtn');
+
     document.getElementById('confirmMessage').textContent = message;
+    okBtn.textContent = okText;
+
+    // 如果是危险操作（如删除），使用红色按钮样式
+    if (isDanger) {
+        okBtn.className = 'btn btn-danger';
+    } else {
+        okBtn.className = 'btn btn-primary';
+    }
+
     confirmCallback = callback;
     modal.style.display = 'block';
 }
@@ -2237,7 +2250,7 @@ function handleCrudDelete(type, id) {
         // 强制刷新界面
         renderKnowledgeGraph();
         updateStats(); // 同时更新统计数据
-    });
+    }, '删除', true);
 }
 
 
@@ -3012,7 +3025,7 @@ function initFeishuEvents() {
         uploadBtn.addEventListener('click', () => {
             showConfirm('确定要上传数据到飞书吗？\n这将覆盖飞书中的现有数据。', () => {
                 FeishuSync.uploadData();
-            });
+            }, '确定', false);
         });
     }
 
@@ -3022,7 +3035,7 @@ function initFeishuEvents() {
         downloadBtn.addEventListener('click', () => {
             showConfirm('确定要从飞书下载数据吗？\n这将覆盖本地浏览器中的数据。', () => {
                 FeishuSync.downloadData();
-            });
+            }, '确定', false);
         });
     }
 
