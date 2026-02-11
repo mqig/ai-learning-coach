@@ -2272,8 +2272,14 @@ function getApiBaseUrl() {
 // Feishu OAuth Configuration & Logic
 // Make it globally accessible for event handlers
 window.FeishuAuth = {
-    // 飞书 App ID
-    APP_ID: 'cli_a906a5b58876dbc7',
+    // 飞书 App ID 改为动态，不应硬编码
+    get APP_ID() {
+        if (typeof FeishuSync !== 'undefined') {
+            const config = FeishuSync.getConfig();
+            return config.appId || null;
+        }
+        return null;
+    },
 
     // 状态 Key
     TOKEN_KEY: 'feishu_user_token',
@@ -2289,6 +2295,18 @@ window.FeishuAuth = {
     // 登录
     login() {
         const appId = this.APP_ID;
+        if (!appId) {
+            showToast('请先在 AI 后台配置中填入您的飞书 App ID', 'error');
+            setTimeout(() => {
+                const modal = document.getElementById('aiConfigModal');
+                if (modal) {
+                    initAIConfig(); // 确保加载
+                    loadConfigToForm();
+                    modal.classList.add('active');
+                }
+            }, 1000);
+            return;
+        }
         const redirectUri = encodeURIComponent(this.REDIRECT_URI);
         const url = `https://open.feishu.cn/open-apis/authen/v1/index?app_id=${appId}&redirect_uri=${redirectUri}&state=LOGIN`;
         console.log('Feishu Login Redirect URI:', this.REDIRECT_URI);
@@ -2343,16 +2361,7 @@ window.FeishuAuth = {
                     avatar: data.avatar_url || ''
                 });
 
-                // 登录成功后自动同步 App ID 到飞书同步模块
-                if (typeof FeishuSync !== 'undefined') {
-                    const syncConfig = FeishuSync.getConfig();
-                    if (!syncConfig.appId) {
-                        syncConfig.appId = this.APP_ID;
-                        FeishuSync.saveConfig(syncConfig);
-                        console.log('已自动同步登录 App ID 到飞书同步配置');
-                    }
-                }
-
+                // 登录成功
                 showToast('登录成功！', 'success');
                 // 刷新页面以加载用户数据 (URL 已经干净)
                 setTimeout(() => window.location.reload(), 1000);
