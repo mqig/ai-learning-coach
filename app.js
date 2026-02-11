@@ -880,7 +880,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (user.avatar && user.avatar.length > 0) {
                         avatarEl.src = user.avatar;
                     } else {
-                        avatarEl.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%233370FF" width="40" height="40" rx="20"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="18" font-family="Inter,sans-serif">' + (user.name ? user.name.charAt(0) : 'U') + '</text></svg>');
+                        // 默认头像：😊 表情
+                        avatarEl.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%233370FF" width="40" height="40" rx="20"/><text x="20" y="28" text-anchor="middle" font-size="22">😊</text></svg>');
                     }
                 }
             }
